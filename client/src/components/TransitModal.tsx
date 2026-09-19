@@ -6,6 +6,7 @@ import { useGame } from "../state/GameContext";
 import { CATEGORY_META, TIER_LABEL } from "./DoodleMap";
 
 const SLOW_CAPTION = "مشي / نقل عام — بلاش، عادي. بوابة بغداد تفرّج لك أجمل الريل.";
+const TRANSIT_CAPTION = "نقل عام (الكيّة) — أسرع شوية، بس تدفع طاقتين.";
 const FAST_CAPTION = "تكسي سريع — يوصلك هسه مقابل 10 طاقات.";
 
 export function TransitModal({ spot, onClose }: { spot: Spot; onClose: () => void }) {
@@ -15,6 +16,7 @@ export function TransitModal({ spot, onClose }: { spot: Spot; onClose: () => voi
   const [message, setMessage] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [animKey, setAnimKey] = useState(0);
+  const [waitMode, setWaitMode] = useState<"slow" | "transit">("slow");
   const busy = useRef(false);
 
   const meta = CATEGORY_META[spot.category];
@@ -31,12 +33,35 @@ export function TransitModal({ spot, onClose }: { spot: Spot; onClose: () => voi
         enterScene(first, "slow", spot.id);
         return;
       }
+      setWaitMode("slow");
       setPhase("walking");
       setSecondsLeft(first.retry_after_seconds);
       setAnimKey((k) => k + 1);
     } catch (err) {
       setPhase("error");
       setMessage(err instanceof Error ? err.message : String(err));
+    } finally {
+      busy.current = false;
+    }
+  };
+
+  const runTransit = async () => {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      const response = await startTransit("transit");
+      if (response.status === "unlocked") {
+        enterScene(response, "transit", spot.id);
+        return;
+      }
+      setWaitMode("transit");
+      setPhase("walking");
+      setSecondsLeft(response.retry_after_seconds);
+      setAnimKey((k) => k + 1);
+    } catch (err) {
+      setPhase("error");
+      setMessage(err instanceof Error ? err.message : String(err));
+      if (err instanceof Error && err.message.includes("INSUFFICIENT_CREDITS")) await refreshUser();
     } finally {
       busy.current = false;
     }
@@ -50,7 +75,11 @@ export function TransitModal({ spot, onClose }: { spot: Spot; onClose: () => voi
         const next = s - 1;
         if (next <= 0) {
           window.clearInterval(tick);
-          void runSlow();
+          if (waitMode === "transit") {
+            void runTransit();
+          } else {
+            void runSlow();
+          }
           return 0;
         }
         return next;
@@ -156,10 +185,18 @@ export function TransitModal({ spot, onClose }: { spot: Spot; onClose: () => voi
           <div className="grid gap-3">
             <button type="button" onClick={runSlow} className="btn-doodle flex w-full items-center justify-between gap-4 text-start">
               <span className="min-w-0">
-                <span className="font-sans block text-lg leading-relaxed text-ink-900">مشي / نقل عام</span>
+                <span className="font-sans block text-lg leading-relaxed text-ink-900">مشي</span>
                 <span className="block text-xs leading-relaxed text-ink-500">{SLOW_CAPTION}</span>
               </span>
               <span className="stamp shrink-0 whitespace-nowrap text-center">0 طاقة</span>
+            </button>
+
+            <button type="button" onClick={runTransit} className="btn-doodle flex w-full items-center justify-between gap-4 text-start">
+              <span className="min-w-0">
+                <span className="font-sans block text-lg leading-relaxed text-ink-900">نقل عام (الكيّة)</span>
+                <span className="block text-xs leading-relaxed text-ink-500">{TRANSIT_CAPTION}</span>
+              </span>
+              <span className="stamp shrink-0 whitespace-nowrap text-center">2 طاقة</span>
             </button>
 
             <button type="button" onClick={runFast} className="btn-doodle flex w-full items-center justify-between gap-4 text-start" aria-label="تكسي سريع -10 طاقات">

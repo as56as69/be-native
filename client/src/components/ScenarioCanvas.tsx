@@ -447,7 +447,14 @@ function StageContent({ props, tpl, s }: StageContentProps) {
             </>
           )}
           {status === "ready" && complete && (
-            <>
+            <div className="animate-card-in relative flex w-full max-w-md flex-col items-center gap-3 rounded-xl border-2 border-ink-700/20 bg-[#FFF9EC] px-6 py-7 text-center shadow-[0_18px_40px_-18px_rgb(46_32_27/0.45)]" style={{ rotate: "-1.5deg" }}>
+              {/* hand-drawn doodle star — achievement sticker */}
+              <svg viewBox="0 0 24 24" className="absolute -top-4 right-4 size-10 rotate-12 drop-shadow-sm" aria-hidden>
+                <path d="M12 2l2.1 6.2L20.5 7l-4.6 4.6 2.3 6.4L12 14.8 5.8 18l2.3-6.4L3.5 7l6.4 1.2z" fill="var(--color-highlighter)" stroke="var(--color-ink-700)" strokeWidth="1.2" strokeLinejoin="round" />
+              </svg>
+              {/* tape strip */}
+              <span className="tape absolute -top-3 left-1/2 h-4 w-24 -translate-x-1/2" aria-hidden />
+
               <span
                 aria-label={SCENARIO_COMPLETE_COPY.verdictLabel}
                 dir="ltr"
@@ -456,6 +463,9 @@ function StageContent({ props, tpl, s }: StageContentProps) {
                 {UI_GENZ_COPY.verdict}
               </span>
               <p className={s.completeTitle}>{SCENARIO_COMPLETE_COPY.title}</p>
+              <p className="font-display text-lg leading-snug text-wasabi-600">
+                <LtrText>{SCENARIO_COMPLETE_COPY.slang}</LtrText>
+              </p>
               <p className={s.completeBody}>{graph?.title}</p>
               <span className="text-sm font-bold text-wasabi-600">
                 <SparkIcon className="me-1 inline-block size-4" /> +{xpGained} ن.ت
@@ -463,7 +473,7 @@ function StageContent({ props, tpl, s }: StageContentProps) {
               <button type="button" onClick={onBackToMap} className={s.linkBtn}>
                 {SCENARIO_COMPLETE_COPY.backToMap}
               </button>
-            </>
+            </div>
           )}
         </div>
       )}

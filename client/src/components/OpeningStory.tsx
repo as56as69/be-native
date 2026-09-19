@@ -66,10 +66,15 @@ export function OpeningStory({ onDone, apiConnected }: { onDone: () => void; api
         }`}
       >
         <h1 className="font-sans text-4xl font-semibold leading-[1.85] tracking-tight text-ink-900 sm:text-5xl sm:leading-[1.8]">
-          “{shown.text_ar}”
+          <span className="text-marker-500">“</span>
+          {shown.text_ar}
+          <span className="text-marker-500">”</span>
         </h1>
-        <p className="font-display mt-5 text-xl leading-relaxed tracking-wide text-kraft-600 sm:text-2xl">
-          “{shown.text_en}”
+        <p
+          dir="ltr"
+          className="font-display unicode-bidi-isolate mt-5 text-xl leading-relaxed tracking-wide text-marker-700 sm:text-2xl"
+        >
+          <mark className="slash-highlight">"{shown.text_en}"</mark>
         </p>
       </div>
 

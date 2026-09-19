@@ -41,26 +41,35 @@ function MapScreen() {
   return (
     <main className="notebook-paper relative flex h-dvh flex-col overflow-hidden">
       {/* sticky status header */}
-      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 border-b border-line-300/60 bg-kraft-100/90 px-4 py-2 backdrop-blur-sm">
+      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line-300/60 bg-kraft-100/90 px-4 py-2 backdrop-blur-sm">
+        {/* title — breathes in the empty middle */}
         <span className="font-display text-xl text-ink-700">بغداد</span>
+
+        {/* left cluster (RTL start): connection + balance indicators */}
         <span className="mx-0.5 h-4 w-px bg-line-300" aria-hidden />
-        <StatusChip tone={online ? "ok" : "bad"}>{online ? "متصل" : "أوفلاين"}</StatusChip>
-        <StatusChip tone={apiConnected ? "ok" : "warn"}>
-          {apiConnected ? "خادم جاهز" : "بلا رصيد"}
-        </StatusChip>
-        {offlineReady && (
-          <StatusChip tone="ok">نُسخ يدك</StatusChip>
-        )}
-        <span className="mr-auto flex items-center gap-3 text-sm text-ink-500">
-          <span className="font-display inline-flex items-center gap-1.5 text-wasabi-600">
-            <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M10 2l2 5h5l-4 3.5 1.6 5.5L10 13 6.4 16l1.6-5.5L4 7h5z" />
-            </svg>
-            {user?.credits_balance ?? "…"} طاقة
+        <div className="flex flex-wrap items-center gap-1.5">
+          <StatusChip tone={online ? "ok" : "bad"}>{online ? "متصل" : "أوفلاين"}</StatusChip>
+          <StatusChip tone={apiConnected ? "ok" : "warn"}>
+            {apiConnected ? "خادم جاهز" : "بلا رصيد"}
+          </StatusChip>
+          {offlineReady && <StatusChip tone="ok">نُسخ يدك</StatusChip>}
+          <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
+            <span className="font-display inline-flex items-center gap-1.5 text-wasabi-600">
+              <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M10 2l2 5h5l-4 3.5 1.6 5.5L10 13 6.4 16l1.6-5.5L4 7h5z" />
+              </svg>
+              {user?.credits_balance ?? "…"} طاقة
+            </span>
+            <span className="text-ink-500/50">•</span>
+            <span>{TIER_LABEL[user?.current_tier ?? "free"]}</span>
           </span>
-          <span className="text-ink-500/50">•</span>
-          <span>{TIER_LABEL[user?.current_tier ?? "free"]}</span>
-        </span>
+        </div>
+
+        {/* spacer — keeps the middle empty for visual breathing */}
+        <div className="min-w-4 flex-1" aria-hidden />
+
+        {/* right cluster (RTL end): Aura / Vault / Scrapbook actions */}
+        <div className="flex flex-wrap items-center justify-end gap-2">
         {/* global traces scrapbook button (typescript: single top-level entry) */}
         <button
           type="button"
@@ -131,6 +140,7 @@ function MapScreen() {
             <path d="M10 2.8v2M10 15.2v2M2.8 10h2M15.2 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4" />
           </svg>
         </a>
+        </div>
       </header>
 
       <div className="min-h-0 flex-1 overflow-hidden px-3 pb-16">

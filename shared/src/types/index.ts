@@ -238,7 +238,7 @@ export interface ScenarioPayloadResult {
 
 // ── Transit API ────────────────────────────────────────────────────────
 
-export type TransitMode = "slow" | "fast";
+export type TransitMode = "slow" | "transit" | "fast";
 
 export interface TransitStartInput {
   user_id: string;

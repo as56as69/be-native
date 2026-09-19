@@ -3,8 +3,10 @@ import { useCallback, useMemo, useState } from "react";
 import {
   VIBE_CATEGORIES,
   type CollectibleCategory,
+  type CollectibleItem,
   type ContentHit,
   type VibeCategory,
+  type VibeMapEntry,
 } from "@be-native/shared";
 
 import { useCollectibles } from "../hooks/useCollectibles";
@@ -52,7 +54,7 @@ export function AdminContent() {
   const [toast, setToast] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
 
-  const { items, addAdminItem, removeAdminItem, resetToSeed: resetCollectiblesToSeed } = useCollectibles();
+  const { items, addAdminItem, removeAdminItem, updateAdminItem, resetToSeed: resetCollectiblesToSeed } = useCollectibles();
 
   const [traceForm, setTraceForm] = useState<{
     phrase: string;
@@ -61,12 +63,19 @@ export function AdminContent() {
     category: CollectibleCategory;
   }>({ phrase: "", targetSlang: "", contextNote: "", category: "GLOBAL" });
   const [traceNote, setTraceNote] = useState<string | null>(null);
+  const [editingTraceId, setEditingTraceId] = useState<string | null>(null);
+  const [traceDraft, setTraceDraft] = useState<{ phrase: string; targetSlang: string; contextNote: string }>({
+    phrase: "",
+    targetSlang: "",
+    contextNote: "",
+  });
 
   /* ── Vibe Mapper form state ────────────────────────────────────────── */
   const {
     entries: vibeEntries,
     addManualEntry,
     deleteEntry: deleteVibeEntry,
+    updateEntry: updateVibeEntry,
     searchEntriesByVibe: searchVibes,
     generateVibe,
     saveToTraces,
@@ -95,6 +104,26 @@ export function AdminContent() {
   const [vibeNote, setVibeNote] = useState<string | null>(null);
   const [vibeFilter, setVibeFilter] = useState<"ALL" | VibeCategory>("ALL");
   const [vibeQuery, setVibeQuery] = useState("");
+  const [editingVibeId, setEditingVibeId] = useState<string | null>(null);
+  const [vibeDraft, setVibeDraft] = useState<{
+    baghdadiPhrase: string;
+    contextTag: string;
+    literalMeaning: string;
+    culturalVibe: string;
+    genZSlang: string;
+    auraImpact: string;
+    usageExample: string;
+    category: VibeCategory;
+  }>({
+    baghdadiPhrase: "",
+    contextTag: "",
+    literalMeaning: "",
+    culturalVibe: "",
+    genZSlang: "",
+    auraImpact: "",
+    usageExample: "",
+    category: "BANTER",
+  });
 
   const flashToast = useCallback((message: string) => {
     setToast(message);
@@ -181,6 +210,21 @@ export function AdminContent() {
     setTraceNote("تم حذف الأثر ✓");
   };
 
+  const updateTrace = (id: string, patch: Partial<Pick<CollectibleItem, "phrase" | "targetSlang" | "contextNote" | "category">>) => {
+    updateAdminItem(id, patch);
+    setTraceNote("تم تعديل الأثر ✓");
+  };
+
+  const beginEditTrace = (item: CollectibleItem) => {
+    setEditingTraceId(item.id);
+    setTraceDraft({ phrase: item.phrase, targetSlang: item.targetSlang, contextNote: item.contextNote ?? "" });
+  };
+
+  const saveTraceEdit = (id: string) => {
+    updateTrace(id, traceDraft);
+    setEditingTraceId(null);
+  };
+
   /* ── Vibe Mapper handlers ──────────────────────────────────────────── */
   const submitVibe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +272,33 @@ export function AdminContent() {
   const deleteVibe = (id: string) => {
     deleteVibeEntry(id);
     setVibeNote("تم حذف المدخل الحسي ✓");
+  };
+
+  const updateVibe = (
+    id: string,
+    patch: Partial<Pick<VibeMapEntry, "baghdadiPhrase" | "contextTag" | "literalMeaning" | "culturalVibe" | "genZSlang" | "auraImpact" | "usageExample" | "category">>,
+  ) => {
+    updateVibeEntry(id, patch);
+    setVibeNote("تم تعديل المدخل الحسي ✓");
+  };
+
+  const beginEditVibe = (entry: VibeMapEntry) => {
+    setEditingVibeId(entry.id);
+    setVibeDraft({
+      baghdadiPhrase: entry.baghdadiPhrase,
+      contextTag: entry.contextTag,
+      literalMeaning: entry.literalMeaning,
+      culturalVibe: entry.culturalVibe,
+      genZSlang: entry.genZSlang,
+      auraImpact: entry.auraImpact ?? "",
+      usageExample: entry.usageExample ?? "",
+      category: entry.category,
+    });
+  };
+
+  const saveVibeEdit = (id: string) => {
+    updateVibe(id, vibeDraft);
+    setEditingVibeId(null);
   };
 
   const search = async () => {
@@ -649,13 +720,58 @@ export function AdminContent() {
                         {new Date(item.createdAt).toLocaleDateString("ar-IQ")}
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => deleteTrace(item.id)}
-                      className="font-arabic rounded-full border border-red-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-red-700 transition-colors hover:bg-red-50"
-                    >
-                      حذف
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {editingTraceId === item.id ? (
+                        <>
+                          {(
+                            [
+                              ["phrase", "العبارة البغدادية", traceDraft.phrase, (v: string) => setTraceDraft((p) => ({ ...p, phrase: v }))],
+                              ["targetSlang", "السلانغ الأمريكي", traceDraft.targetSlang, (v: string) => setTraceDraft((p) => ({ ...p, targetSlang: v }))],
+                              ["contextNote", "ملاحظة السياق", traceDraft.contextNote, (v: string) => setTraceDraft((p) => ({ ...p, contextNote: v }))],
+                            ] as const
+                          ).map(([key, label, value, setV]) => (
+                            <input
+                              key={key}
+                              value={value}
+                              onChange={(e) => setV(e.target.value)}
+                              placeholder={label}
+                              className="w-full rounded-sm border border-amber-900/30 bg-[#FFFDF7] px-2 py-1 text-xs text-amber-950 outline-none focus:border-amber-900/60"
+                            />
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setEditingTraceId(null)}
+                            className="font-arabic rounded-full border border-amber-700/40 bg-[#FFFDF7] px-2 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-50"
+                          >
+                            إلغاء
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => saveTraceEdit(item.id)}
+                            className="font-arabic rounded-full border border-emerald-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-emerald-700 transition-colors hover:bg-emerald-50"
+                          >
+                            حفظ
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => beginEditTrace(item)}
+                            className="font-arabic rounded-full border border-blue-700/40 bg-[#FFFDF7] px-3 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-50"
+                          >
+                            تعديل
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteTrace(item.id)}
+                            className="font-arabic rounded-full border border-red-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-red-700 transition-colors hover:bg-red-50"
+                          >
+                            حذف
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}
@@ -850,28 +966,71 @@ export function AdminContent() {
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={
-                      entry.source === "ADMIN_MANUAL"
-                        ? "font-arabic rounded-full border border-[#8B0000]/40 px-2 py-0.5 text-[10px] text-[#8B0000]"
-                        : "font-arabic rounded-full border border-[#1E3A8A]/40 px-2 py-0.5 text-[10px] text-[#1E3A8A]"
-                    }
-                  >
-                    {entry.source === "ADMIN_MANUAL" ? "إدخال يدوي" : "توليد ذكي"}
-                  </span>
-                  <span className="rounded-full border border-amber-900/30 px-2 py-0.5 font-mono text-[10px] text-amber-900/70">
-                    {entry.category}
-                  </span>
-                  <span className="font-arabic text-[10px] text-stone-400">
-                    {new Date(entry.createdAt).toLocaleDateString("ar-IQ")}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteVibe(entry.id)}
-                    className="mr-auto font-arabic rounded-full border border-red-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-red-700 transition-colors hover:bg-red-50"
-                  >
-                    حذف
-                  </button>
+                  {editingVibeId === entry.id ? (
+                    <>
+                      {(
+                        [
+                          ["baghdadiPhrase", "العبارة البغدادية", vibeDraft.baghdadiPhrase, (v: string) => setVibeDraft((p) => ({ ...p, baghdadiPhrase: v }))],
+                          ["contextTag", "وسم السياق", vibeDraft.contextTag, (v: string) => setVibeDraft((p) => ({ ...p, contextTag: v }))],
+                          ["literalMeaning", "المعنى الحرفي", vibeDraft.literalMeaning, (v: string) => setVibeDraft((p) => ({ ...p, literalMeaning: v }))],
+                          ["culturalVibe", "الشرح الحسي", vibeDraft.culturalVibe, (v: string) => setVibeDraft((p) => ({ ...p, culturalVibe: v }))],
+                          ["genZSlang", "السلانغ", vibeDraft.genZSlang, (v: string) => setVibeDraft((p) => ({ ...p, genZSlang: v }))],
+                          ["auraImpact", "Aura", vibeDraft.auraImpact, (v: string) => setVibeDraft((p) => ({ ...p, auraImpact: v }))],
+                          ["usageExample", "مثال", vibeDraft.usageExample, (v: string) => setVibeDraft((p) => ({ ...p, usageExample: v }))],
+                        ] as const
+                      ).map(([key, label, value, setV]) => (
+                        <input
+                          key={key}
+                          value={value}
+                          onChange={(e) => setV(e.target.value)}
+                          placeholder={label}
+                          className="w-full rounded-sm border border-amber-900/30 bg-[#FFFDF7] px-2 py-1 text-xs text-amber-950 outline-none focus:border-amber-900/60"
+                        />
+                      ))}
+                      <select
+                        value={vibeDraft.category}
+                        onChange={(e) => setVibeDraft((p) => ({ ...p, category: e.target.value as VibeCategory }))}
+                        className="rounded-sm border border-amber-900/30 bg-[#FFFDF7] px-2 py-1 text-xs text-amber-950 outline-none focus:border-amber-900/60"
+                      >
+                        {VIBE_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c} — {VIBE_CATEGORY_LABEL[c]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setEditingVibeId(null)}
+                        className="font-arabic rounded-full border border-amber-700/40 bg-[#FFFDF7] px-2 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-50"
+                      >
+                        إلغاء
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => saveVibeEdit(entry.id)}
+                        className="font-arabic rounded-full border border-emerald-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-emerald-700 transition-colors hover:bg-emerald-50"
+                      >
+                        حفظ
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => beginEditVibe(entry)}
+                        className="mr-auto font-arabic rounded-full border border-blue-700/40 bg-[#FFFDF7] px-3 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-50"
+                      >
+                        تعديل
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteVibe(entry.id)}
+                        className="font-arabic rounded-full border border-red-700/50 bg-[#FFFDF7] px-3 py-1 text-xs text-red-700 transition-colors hover:bg-red-50"
+                      >
+                        حذف
+                      </button>
+                    </>
+                  )}
                 </div>
               </li>
             ))}

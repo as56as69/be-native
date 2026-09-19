@@ -76,6 +76,7 @@ export default defineConfig({
   ],
   server: {
     port: DEFAULT_CLIENT_PORT,
+    allowedHosts: true,
     proxy: {
       "/api": `http://localhost:${DEFAULT_SERVER_PORT}`
     }

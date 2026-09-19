@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { Spot, SpotCategory } from "@be-native/shared";
@@ -92,6 +93,10 @@ const ICON_BUILDERS: Record<SpotCategory, IconBuilder> = {
   ),
   street_vendor: () => (
     <>
+      {/* hand-drawn chai glass (استكان) doodle — chai on the mind */}
+      <path d="M8.2 3.4h2.6l-.4 3.8a1.9 1.9 0 0 1-3.7 0Z" />
+      <path d="M7.6 7.9q1.9 1 3.8 0" />
+      <path d="M8.6 4.4h1.8" />
       <path d="M7.2 12.4h8.6l-.6 3.6a3.9 3.2 0 0 1-7.4 0Z" />
       <path d="M11.4 12.4l-.4-3.2h1.2l.2 3.2" />
       <path d="M15.9 13.6l3.1.8c.6.1.8.7.3 1.2l-2.7 1.1" />
@@ -292,9 +297,9 @@ function toPercent(v: number): string {
 const PIN_POS: Record<string, { x: number; y: number }> = {
   "Al-Mansour Street Cafe": { x: 18, y: 15 },
   "Karrada Street Tea Vendor": { x: 78, y: 40 },
-  "Ziyouna Gym": { x: 74, y: 62 },
-  "Baghdad Taxi Ride": { x: 20, y: 80 },
-  "Mutanabbi Bookshop": { x: 78, y: 82 },
+  "Ziyouna Gym": { x: 74, y: 60 },
+  "Baghdad Taxi Ride": { x: 20, y: 72 },
+  "Mutanabbi Bookshop": { x: 78, y: 74 },
 };
 
 /* ─────────────────────── dynamic theming architecture ─────────────────────- */
@@ -334,25 +339,185 @@ export const NOTEBOOK_THEMES: Record<string, MapTheme> = {
 
 const DEFAULT_THEME = NOTEBOOK_THEMES.notebook;
 
-/** ViewBox coordinates (100×110) of a pin anchor, derived from its % placement. */
-function pinPoint(spot: Spot): [number, number] {
-  const fixed = PIN_POS[spot.title_en];
-  const left = fixed ? fixed.x : parseFloat(toPercent(spot.position_x));
-  const top = fixed ? fixed.y : parseFloat(toPercent(spot.position_y));
-  return [left, top * 1.1];
+/* ─────────────────────────────────────────────────────────────────────────────
+   Red Yarn System — hand-drawn detective yarn (not flight/dashed map lines):
+
+   • Anchors are computed DYNAMICALLY from the real CSS layout: each card is
+     placed with `left/top: <pct>%` inside the map container, the container is
+     measured with a ResizeObserver, and the pin head (the pushpin circle) is
+     derived in the same pixel frame, then mapped back into the SVG viewBox.
+     The yarn therefore meets the actual pushpin the user sees on screen —
+     no hardcoded viewBox coordinates, no detached threads.
+   • Cubic Bézier with gravity sag: each thread sags below its two pins,
+     exactly like a real yarn loosely hand-pinned to a cork board.
+   • Bridges: threads cross the Tigris only at the two DoodleRiver bridges
+     (never blindly over water or labels).
+   • Routing never self-crosses: pins are chained per bank (Karkh → Rasafa)
+     sorted by latitude, then connected through the single nearest bridge.
+   • Three status costumes:
+       active/solved  → solid burgundy/red yarn (drawn, weighty)
+       locked         → faint chalky grey dotted yarn (idea, unopened)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/** Measured pixel size of the map container. */
+interface MapSize {
+  w: number;
+  h: number;
 }
 
-/** Thin, hand-jittered thread path linking the spot notes in order. */
-function threadPath(spots: Spot[]): string {
+/** How the 100×110 viewBox is letterbox-fitted (preserveAspectRatio meet) into
+ *  the measured container — the inverse mapping CSS px → viewBox units. */
+function fitOf({ w, h }: MapSize) {
+  const scale = Math.min(w / 100, h / 110);
+  return { scale, offsetX: (w - 100 * scale) / 2, offsetY: (h - 110 * scale) / 2 };
+}
+
+/** CSS % (0–100) placement of a card — the SAME source the DOM <button> uses. */
+function pinPercent(spot: Spot): [number, number] {
+  const fixed = PIN_POS[spot.title_en];
+  return [
+    fixed ? fixed.x : parseFloat(toPercent(spot.position_x)),
+    fixed ? fixed.y : parseFloat(toPercent(spot.position_y)),
+  ];
+}
+
+/** Pushpin head anchor in viewBox coordinates, derived from the live CSS layout:
+ *  same % as the card button, measured container size, mapped back into the
+ *  100×110 scene so the yarn meets the visible pin exactly.
+ *
+ *  The pin span floats `top: -7px; translate-y: -50%` above the button (20px
+ *  tall), and the pushpin HEAD circle sits at y=8.2 of its 24-unit viewBox →
+ *  8.2/24 ≈ 0.342 of the 20px height. So the head center is ≈10.2px ABOVE the
+ *  button top edge. This offset is used only pre-measurement (safe fallback);
+ *  live renders use the measured DOM rect centre of the actual pin head. */
+const PIN_HEAD_OFFSET_PX = 10.2;
+
+function pinAnchor(spot: Spot, size: MapSize): [number, number] {
+  const [pctX, pctY] = pinPercent(spot);
+  const fit = fitOf(size);
+  const xPx = (pctX / 100) * size.w;
+  const yPx = (pctY / 100) * size.h - PIN_HEAD_OFFSET_PX;
+  return [(xPx - fit.offsetX) / fit.scale, (yPx - fit.offsetY) / fit.scale];
+}
+
+/** Waypoint (bridge) that routes a yarn segment across the Tigris. */
+const RIVER_BRIDGES: ReadonlyArray<{ id: string; x: number; y: number }> = [
+  { id: "north", x: 50, y: 33 },
+  { id: "south", x: 50, y: 78 },
+];
+
+/** Which bank a pin sits on — west of the river channel (x<38%) or east. */
+function bankOfX(x: number): "west" | "east" {
+  return x < 38 ? "west" : "east";
+}
+
+/** Measured pin positions in viewBox units, merged with `pins` of ctx. */
+interface MapCtx {
+  size: MapSize;
+  pins: Record<string, [number, number]>;
+}
+
+function pinAnchorCtx(spot: Spot, ctx: MapCtx): [number, number] {
+  const explicit = ctx.pins[spot.id];
+  if (explicit) return explicit;
+  return pinAnchor(spot, ctx.size);
+}
+
+/** Chain pins top→bottom (same bank only) — no zigzag, no self-crossing. */
+function chainPath(chain: Spot[], ctx: MapCtx): string {
   let d = "";
-  spots.forEach((spot, i) => {
-    const [x, y] = pinPoint(spot);
-    if (i === 0) d = `M${x} ${y}`;
-    else {
-      const [px, py] = pinPoint(spots[i - 1]);
-      const mx = (px + x) / 2;
-      const my = (py + y) / 2 + (seed(i * 7 + 3) - 0.5) * 4;
-      d += ` Q${mx.toFixed(2)} ${my.toFixed(2)} ${x} ${y}`;
+  chain.forEach((spot, i) => {
+    const to = pinAnchorCtx(spot, ctx);
+    if (i === 0) {
+      d = `M${to[0].toFixed(2)} ${to[1].toFixed(2)}`;
+      return;
+    }
+    const from = pinAnchorCtx(chain[i - 1], ctx);
+    d += ` ${yarnCurve(from, to, i)}`;
+  });
+  return d;
+}
+
+/** Yarn curve — smooth cubic Bézier with a GENEROUS gravity bow so threads
+ *  never read as straight PCB wires on the board.
+ *  The control points are pushed perpendicular to the chord (alternating side
+ *  per segment index) plus a downward bias — like a hand-pinned thread with
+ *  visible slack. */
+function yarnCurve(from: [number, number], to: [number, number], i = 0): string {
+  const [x1, y1] = from;
+  const [x2, y2] = to;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy) || 1;
+  // Visible slack: at least 4.5 viewBox units (~25px), scaling with the chord.
+  const sag = Math.min(14, Math.max(4.5, len * 0.26));
+  // Right-hand unit normal of the chord — the bow direction.
+  const nx = -dy / len;
+  const ny = dx / len;
+  const side = i % 2 === 0 ? 1 : -1;
+  const bow = sag * side * 0.48;
+  // Chunky movement along the chord: always a visible curve, never a straight
+  // vertical or horizontal drop — orthogonal PCB look is now impossible.
+  const ax = Math.min(0.26, Math.max(0.15, Math.abs(dx) / (Math.abs(dx) + Math.abs(dy) + 1e-6)));
+  const cx1 = x1 + dx * (0.5 - ax) + nx * bow;
+  const cy1 = y1 + dy * (0.5 - ax) + ny * bow + sag * 0.34;
+  const cx2 = x1 + dx * (0.5 + ax) + nx * bow;
+  const cy2 = y1 + dy * (0.5 + ax) + ny * bow + sag * 0.34;
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)} C${cx1.toFixed(2)} ${cy1.toFixed(2)} ${cx2.toFixed(2)} ${cy2.toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+/** Route through a bridge waypoint — two lazy quadratics with visible sag. */
+function yarnCurveVia(from: [number, number], to: [number, number], waypoint: { x: number; y: number }, i = 0): string {
+  const [x1, y1] = from;
+  const [x2, y2] = to;
+  const w = waypoint;
+  const lenA = Math.hypot(w.x - x1, w.y - y1) || 1;
+  const lenB = Math.hypot(x2 - w.x, y2 - w.y) || 1;
+  const sagA = Math.min(10, Math.max(3, lenA * 0.18));
+  const sagB = Math.min(10, Math.max(3, lenB * 0.18));
+  const side = i % 2 === 0 ? 1 : -1;
+  return (
+    `M${x1.toFixed(2)} ${y1.toFixed(2)} ` +
+    `Q${(((x1 + w.x) / 2) + side * sagA * 0.35).toFixed(2)} ${(((y1 + w.y) / 2) + sagA).toFixed(2)} ${w.x.toFixed(2)} ${w.y.toFixed(2)} ` +
+    `Q${(((w.x + x2) / 2) - side * sagB * 0.35).toFixed(2)} ${(((w.y + y2) / 2) + sagB).toFixed(2)} ${x2.toFixed(2)} ${y2.toFixed(2)}`
+  );
+}
+
+/** Non-crossing route: west bank chain → nearest bridge → east bank chain. */
+function routeYarn(spots: Spot[], ctx: MapCtx): string {
+  const anchor = (s: Spot) => pinAnchorCtx(s, ctx);
+  const west = spots.filter((s) => bankOfX(anchor(s)[0]) === "west").sort((a, b) => anchor(a)[1] - anchor(b)[1]);
+  const east = spots.filter((s) => bankOfX(anchor(s)[0]) === "east").sort((a, b) => anchor(a)[1] - anchor(b)[1]);
+  if (west.length === 0 || east.length === 0) {
+    return chainPath([...west, ...east].sort((a, b) => anchor(a)[1] - anchor(b)[1]), ctx);
+  }
+  // pick the bridge closest to the segment between the two banks
+  const [wx, wy] = anchor(west[west.length - 1]);
+  const [ex, ey] = anchor(east[0]);
+  const mx = (wx + ex) / 2;
+  const my = (wy + ey) / 2;
+  let bridge = RIVER_BRIDGES[0];
+  let best = Infinity;
+  for (const b of RIVER_BRIDGES) {
+    const dist = (b.x - mx) ** 2 + (b.y - my) ** 2;
+    if (dist < best) {
+      best = dist;
+      bridge = b;
+    }
+  }
+  const chain = [...west, ...east];
+  let d = "";
+  chain.forEach((spot, i) => {
+    const to = anchor(spot);
+    if (i === 0) {
+      d = `M${to[0].toFixed(2)} ${to[1].toFixed(2)}`;
+      return;
+    }
+    const from = anchor(chain[i - 1]);
+    if (bankOfX(anchor(chain[i - 1])[0]) === "west" && bankOfX(anchor(spot)[0]) === "east") {
+      d += ` ${yarnCurveVia(from, to, bridge, i)}`;
+    } else {
+      d += ` ${yarnCurve(from, to, i)}`;
     }
   });
   return d;
@@ -360,15 +525,47 @@ function threadPath(spots: Spot[]): string {
 
 /* ────────────────── base canvas: notebook + Tigris + threads ──────────────- */
 
-export function NotebookMapCanvas({ spots, theme }: { spots: Spot[]; theme: MapTheme }) {
+/** Soft drop-shadow filter — gives the yarn a raised, physical look over the
+ *  paper (like real red thread slightly above the board). */
+const YARN_FILTER_ID = "yarn-dropshadow";
+
+export function NotebookMapCanvas({
+  spots,
+  theme,
+  measuredPins = {},
+}: {
+  spots: Spot[];
+  theme: MapTheme;
+  measuredPins?: Record<string, [number, number]>;
+}) {
+  const unlocked = spots.filter((s) => !s.is_locked);
+  const locked = spots.filter((s) => s.is_locked);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<MapSize>({ w: 100, h: 110 });
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const ctx: MapCtx = { size, pins: measuredPins };
   return (
+    <div ref={wrapRef} className="absolute inset-0 z-0 h-full w-full overflow-hidden">
     <svg
       viewBox="0 0 100 110"
       preserveAspectRatio="xMidYMid meet"
-      className="absolute inset-0 z-0 h-full w-full"
+      className="h-full w-full"
       role="img"
       aria-label="خريطة بغداد — لوحة تحقيق على دفتر ورق"
     >
+      <defs>
+        <filter id={YARN_FILTER_ID} x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="1" dy="1.6" stdDeviation="1.4" floodColor="#2a1513" floodOpacity="0.3" />
+        </filter>
+      </defs>
       <rect x="0" y="0" width="100" height="110" fill={theme.cover} />
 
       {/* background scenery (painted before threads/pins) */}
@@ -387,13 +584,40 @@ export function NotebookMapCanvas({ spots, theme }: { spots: Spot[]; theme: MapT
         ))}
       </g>
 
-      {/* investigation threads — one crisp continuous SVG path on the pins */}
-      <g className="map-threads" pointerEvents="none" opacity={theme.threadOpacity} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      {/* Red Yarn System — detective threads (sagging Béziers, pinned at pushpin
+          heads, crossing the Tigris only at bridge waypoints; locked spots get a
+          faint chalky dotted yarn).
+          The whole thread layer sits at z-0 (behind) — cards & pins are z-10/20,
+          so the yarn emerges from UNDER the pin heads, never over the notes. */}
+      <g className="map-threads" pointerEvents="none" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        {locked.length > 0 && (
+          <path
+            d={routeYarn(locked, ctx)}
+            stroke="var(--color-ink-300)"
+            strokeWidth={Math.max(0.8, (theme.threadWidth ?? 1.5) - 0.55)}
+            strokeDasharray="2 3.5"
+            opacity={0.4}
+            aria-hidden
+          />
+        )}
+        {/* active yarn — two layered passes for depth (shadow + bright red) */}
+        <path d={routeYarn(unlocked, ctx)} stroke="currentColor" strokeWidth={0.4} opacity={0} aria-hidden />
         <path
-          d={threadPath(spots)}
+          d={routeYarn(unlocked, ctx)}
           stroke={theme.thread}
-          strokeWidth={theme.threadWidth}
-          strokeDasharray={theme.threadDash}
+          strokeWidth={Math.max(1.7, (theme.threadWidth ?? 1.6) + 0.5)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter={`url(#${YARN_FILTER_ID})`}
+          className="yarn-shadow"
+        />
+        <path
+          d={routeYarn(unlocked, ctx)}
+          stroke={theme.thread}
+          strokeWidth={Math.max(1.55, (theme.threadWidth ?? 1.6) + 0.35)}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="yarn-core"
         />
       </g>
 
@@ -417,6 +641,7 @@ export function NotebookMapCanvas({ spots, theme }: { spots: Spot[]; theme: MapT
         <path d="M41 9.4 44.4 8.8 41.4 12.8" stroke="var(--color-kraft-500)" strokeWidth="0.55" strokeLinecap="round" strokeLinejoin="round" />
       </g>
     </svg>
+    </div>
   );
 }
 
@@ -435,12 +660,45 @@ export function DoodleMap({
 }) {
   const unlocked = spots.filter((s) => !s.is_locked);
   const locked = spots.filter((s) => s.is_locked);
+  const currentSpot = unlocked[unlocked.length - 1] ?? null;
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const [measuredPins, setMeasuredPins] = useState<Record<string, [number, number]>>({});
+  useEffect(() => {
+    const container = mapRef.current;
+    if (!container) return;
+    const measurePins = () => {
+      const next: Record<string, [number, number]> = {};
+      container.querySelectorAll<HTMLElement>("[data-pin-id]").forEach((pinEl) => {
+        const id = pinEl.dataset.pinId;
+        if (!id) return;
+        const pinRect = pinEl.getBoundingClientRect();
+        const mapRect = container.getBoundingClientRect();
+        // pushpin HEAD circle centre: y = 8.2 of the 24-unit viewBox (~0.342),
+        // so we target the visible red head, not the span or the card edge.
+        const headX = pinRect.left + pinRect.width / 2;
+        const headY = pinRect.top + pinRect.height * (8.2 / 24);
+        const xPx = headX - mapRect.left;
+        const yPx = headY - mapRect.top;
+        const fit = fitOf({ w: container.clientWidth, h: container.clientHeight });
+        next[id] = [(xPx - fit.offsetX) / fit.scale, (yPx - fit.offsetY) / fit.scale];
+      });
+      setMeasuredPins(next);
+    };
+    measurePins();
+    // re-measure on the next frame so fonts/scrollbars/card layout have settled
+    const raf = requestAnimationFrame(measurePins);
+    const ro = new ResizeObserver(measurePins);
+    ro.observe(container);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [spots]);
 
   return (
-    <div className="relative mx-auto h-full w-full overflow-hidden">
+    <div ref={mapRef} className="relative mx-auto h-full w-full overflow-hidden pb-8">
       {/* swappable base canvas (notebook / Tigris / threads) */}
-      <NotebookMapCanvas spots={spots} theme={theme} />
-
+      <NotebookMapCanvas spots={spots} theme={theme} measuredPins={measuredPins} />
       {/* paper-note spot cutouts, pinned to the board */}
       {spots.map((spot) => {
         const meta = CATEGORY_META[spot.category];
@@ -461,36 +719,52 @@ export function DoodleMap({
             }`}
             aria-label={`${meta.labelAr} ${spot.title_en}`}
           >
-            {/* push-pin: centered exactly on the thread anchor */}
-            <span className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2" aria-hidden>
+            {/* push-pin: thread wraps around pin head (anchor lifted 7 units) — pin sits ON TOP of the yarn */}
+            <span
+              data-pin-id={spot.id}
+              className="pointer-events-none absolute left-1/2 top-[-7px] z-20 -translate-x-1/2 -translate-y-1/2"
+              aria-hidden
+            >
               <PushPinDoodle />
             </span>
 
             {/* paper note — fixed grid bounds, subtle kraft sticker, no float shadow */}
             <span
-              className="relative z-10 flex h-[75px] w-[110px] flex-col items-center justify-center rounded-[8px] border border-ink-700/15 bg-[#fefae0]/80 p-2 text-ink-700 transition-transform"
+              className={`relative z-10 flex h-[80px] w-[110px] flex-col items-center justify-center rounded-[8px] border p-2 text-ink-700 transition-transform duration-150 ${
+                lockedSpot
+                  ? "border-dashed border-ink-700/25 bg-kraft-100/70 opacity-70"
+                  : "border-wasabi-600/45 bg-[#fefae0]/90 shadow-[0_0_12px_-2px_var(--color-highlighter)] card-wobble"
+              }`}
               style={{ rotate: `${rot}deg` }}
             >
-              <span className={`block text-center leading-none ${lockedSpot ? "opacity-60" : ""}`}>
+              <span className={`block text-center leading-none ${lockedSpot ? "opacity-40 grayscale" : ""}`}>
                 {lockedSpot ? <LockDoodle size={28} /> : <DrawIcon category={spot.category} title={spot.title_en} size={28} />}
               </span>
-              <span className="mx-auto mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center font-sans text-xs font-bold leading-snug text-ink-700">
+              <span className="mx-auto mt-1 block max-w-full text-center font-sans text-[11px] font-bold leading-tight text-ink-700 line-clamp-2">
                 {spot.title_ar}
               </span>
             </span>
+            {!lockedSpot && currentSpot && spot.id === currentSpot.id && (
+              <span className="pointer-events-none absolute -bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-ink-700/20 bg-[#fefae0]/95 px-1.5 py-0.5 font-sans text-[9px] font-bold text-ink-700 shadow-sm">
+                <span className="here-beacon inline-block size-1.5 rounded-full bg-red-600" aria-hidden />
+                أنت هنا
+              </span>
+            )}
           </button>
         );
       })}
 
       {/* board caption */}
-      <figcaption className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap font-display text-base tracking-wide text-ink-500">
+      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center bg-gradient-to-t from-kraft-100 via-kraft-100/85 to-transparent px-3 pb-1.5 pt-4">
         <span className="inline-grid h-3.5 w-3.5 place-items-center align-[-1px]" aria-hidden>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6.2 18.8l.8-4.6L15.4 5.8a1.7 1.7 0 0 1 2.4 0l.4.4a1.7 1.7 0 0 1 0 2.4l-8.7 8.1-4.5.9z" />
             <path d="M13.6 7.7l2.6 2.6" />
           </svg>
         </span>
-        {BOARD_LABEL} · {unlocked.length} مفتوح {locked.length ? `· ${locked.length} على الطريق` : ""}
+        <span className="rounded-full border border-ink-700/10 bg-kraft-50/70 px-2.5 py-0.5 font-display text-sm tracking-wide text-ink-500 backdrop-blur-[2px]">
+          {BOARD_LABEL} · {unlocked.length} مفتوح {locked.length ? `· ${locked.length} على الطريق` : ""}
+        </span>
       </figcaption>
     </div>
   );

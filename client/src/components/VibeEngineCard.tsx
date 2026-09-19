@@ -100,9 +100,12 @@ export function VibeEngineCard({ entry, onSaveToTraces }: VibeEngineCardProps) {
           <p className="mt-1 text-xs text-stone-500">({entry.literalMeaning})</p>
         )}
 
-        {/* Gen Z slang — explicit LTR isolation */}
+        {/* Gen Z slang — explicit LTR isolation + highlighter-marked keyword */}
         <span dir="ltr" className="mt-3 block font-mono text-lg font-bold text-amber-900">
-          → {entry.genZSlang}
+          →{" "}
+          <mark className="slash-highlight rounded-[0.18em] px-0.5 py-px">
+            {entry.genZSlang}
+          </mark>
         </span>
 
         {/* dual audio buttons */}

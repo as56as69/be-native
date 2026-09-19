@@ -308,6 +308,14 @@ const seededScenarios: Row[] = [
 
 const seededQuotes: Row[] = [
   {
+    id: "00000000-0000-4000-8000-0000000000e4",
+    text_ar: "بغداد بيها حجي.. وسوالف ماتنحجي",
+    text_en: "Baghdad never runs out of talk — never. But the realest stories? No cap... those don't get told. They just live in you. Lowkey, that's what hits different. Real ones know.",
+    is_active: true,
+    sort_order: 0,
+    created_at: new Date().toISOString(),
+  },
+  {
     id: "00000000-0000-4000-8000-0000000000e1",
     text_ar: "لو تعرف البلد من گعدة چاي ما تعوّضه شعبٍ كامل.",
     text_en: "Get a country from a single cup of chai — no crowd can match it.",

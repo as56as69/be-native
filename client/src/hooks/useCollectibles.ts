@@ -40,8 +40,10 @@ interface UseCollectiblesResult {
   addAdminItem: (input: AdminCollectibleInput) => CollectibleItem;
   /** Get-or-create SCENARIO traces from the given seeds; returns resolved items. */
   registerScenarioItems: (seeds: ScenarioCollectibleSeed[]) => CollectibleItem[];
-  /** Removes a trace by id (admin traces are purged from localStorage too). */
+  /** Removes a admin-created trace (admin traces are purged from localStorage too). */
   removeAdminItem: (id: string) => void;
+  /** Updates an admin-created trace's phrase/targetSlang/contextNote/category. */
+  updateAdminItem: (id: string, patch: Partial<Pick<CollectibleItem, "phrase" | "targetSlang" | "contextNote" | "category">>) => void;
   /**
    * Trace counts for a category — total covers BOTH scenario-seeded items
    * and admin-created items; unlocked reflects the persisted unlock map.
@@ -206,6 +208,20 @@ export function useCollectibles(): UseCollectiblesResult {
     });
   }, []);
 
+  const updateAdminItem = useCallback(
+    (id: string, patch: Partial<Pick<CollectibleItem, "phrase" | "targetSlang" | "contextNote" | "category">>) => {
+      setItems((prev) => {
+        const next = prev.map((item) => (item.id === id ? { ...item, ...patch } : item));
+        writeJSON(
+          COLLECTIBLES_ADMIN_KEY,
+          next.filter((existing) => existing.source === "ADMIN"),
+        );
+        return next;
+      });
+    },
+    [],
+  );
+
   const getCategoryStats = useCallback(
     (category: CollectibleCategory): { total: number; unlocked: number } => {
       const unlocked = new Set(Object.keys(unlockedIds));
@@ -253,6 +269,7 @@ export function useCollectibles(): UseCollectiblesResult {
     addAdminItem,
     registerScenarioItems,
     removeAdminItem,
+    updateAdminItem,
     getCategoryStats,
     nextAdminTraceForCategory,
     resetToSeed,

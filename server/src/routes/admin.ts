@@ -94,12 +94,44 @@ export function createAdminRouter(): Router {
 
   router.put("/settings", async (req, res, next) => {
     try {
-      const raw = Number(req.body?.slow_gate_ms);
-      if (!Number.isFinite(raw) || raw <= 0) {
-        res.status(422).json({ error: "slow_gate_ms must be a positive number" });
-        return;
+      const { slow_gate_ms, transit_gate_ms, fast_transit_cost, transit_cost, bypass_first_request } = req.body ?? {};
+      const patch: Record<string, unknown> = {};
+      if (slow_gate_ms !== undefined) {
+        const raw = Number(slow_gate_ms);
+        if (!Number.isFinite(raw) || raw <= 0) {
+          res.status(422).json({ error: "slow_gate_ms must be a positive number" });
+          return;
+        }
+        patch.slow_gate_ms = raw;
       }
-      res.json(await updateSettings(db, { slow_gate_ms: raw }));
+      if (transit_gate_ms !== undefined) {
+        const raw = Number(transit_gate_ms);
+        if (!Number.isFinite(raw) || raw <= 0) {
+          res.status(422).json({ error: "transit_gate_ms must be a positive number" });
+          return;
+        }
+        patch.transit_gate_ms = raw;
+      }
+      if (fast_transit_cost !== undefined) {
+        const raw = Number(fast_transit_cost);
+        if (!Number.isFinite(raw) || raw < 0) {
+          res.status(422).json({ error: "fast_transit_cost must be a non-negative number" });
+          return;
+        }
+        patch.fast_transit_cost = raw;
+      }
+      if (transit_cost !== undefined) {
+        const raw = Number(transit_cost);
+        if (!Number.isFinite(raw) || raw < 0) {
+          res.status(422).json({ error: "transit_cost must be a non-negative number" });
+          return;
+        }
+        patch.transit_cost = raw;
+      }
+      if (bypass_first_request !== undefined) {
+        patch.bypass_first_request = Boolean(bypass_first_request);
+      }
+      res.json(await updateSettings(db, patch as never));
     } catch (err) {
       next(err);
     }

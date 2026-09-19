@@ -38,8 +38,18 @@ interface UseVibeMapperResult {
   getEntriesByCategory: (category: VibeCategory) => VibeMapEntry[];
   /** Free-text lookup across phrase, context, vibe, slang, example. */
   searchEntriesByVibe: (query: string) => VibeMapEntry[];
-  /** Removes an entry by id and purges it from localStorage. */
+  /** Removes a vibe entry by id (custom entries purged from localStorage). */
   deleteEntry: (id: string) => void;
+  /** Updates a vibe entry's editable fields in memory + localStorage. */
+  updateEntry: (
+    id: string,
+    patch: Partial<
+      Pick<
+        VibeMapEntry,
+        "baghdadiPhrase" | "contextTag" | "literalMeaning" | "culturalVibe" | "genZSlang" | "auraImpact" | "usageExample" | "category"
+      >
+    >,
+  ) => void;
   /**
    * 3-step AI pipeline (تفكيك → قالب وسيط → صياغة Gen Z): resolves (or
    * synthesizes) a vibe mapping for a Baghdadi phrase + template, reports
@@ -274,6 +284,25 @@ export function useVibeMapper(addAdminItem?: (input: AdminCollectibleInput) => C
     });
   }, []);
 
+  const updateEntry = useCallback(
+    (
+      id: string,
+      patch: Partial<
+        Pick<
+          VibeMapEntry,
+          "baghdadiPhrase" | "contextTag" | "literalMeaning" | "culturalVibe" | "genZSlang" | "auraImpact" | "usageExample" | "category"
+        >
+      >,
+    ) => {
+      setEntries((prev) => {
+        const next = prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry));
+        writeJSON(VIBE_DICTIONARY_KEY, next);
+        return next;
+      });
+    },
+    [],
+  );
+
   const resetToSeed = useCallback(() => {
     try {
       window.localStorage.removeItem(VIBE_DICTIONARY_KEY);
@@ -377,6 +406,7 @@ export function useVibeMapper(addAdminItem?: (input: AdminCollectibleInput) => C
     getEntriesByCategory,
     searchEntriesByVibe,
     deleteEntry,
+    updateEntry,
     generateVibe,
     saveToTraces,
     resetToSeed,

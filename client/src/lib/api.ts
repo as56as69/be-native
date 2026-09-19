@@ -35,6 +35,10 @@ export interface VoucherRedeemResult {
 
 export interface AdminSettings {
   slow_gate_ms: number;
+  transit_gate_ms?: number;
+  fast_transit_cost?: number;
+  transit_cost?: number;
+  bypass_first_request?: boolean;
 }
 
 export class ApiError extends Error {

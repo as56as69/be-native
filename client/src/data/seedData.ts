@@ -247,7 +247,9 @@ export const SCENARIO_COMPLETE_COPY = {
   /** Arabic helper beside the Gen Z verdict (mapped to UI_GENZ_COPY.verdict). */
   verdictLabel: "نتيجة السيناريو",
   /** Celebration headline when a graph finishes. */
-  title: "ياكَحب؟ صرتِ ابن بلد!",
+  title: "يا حبّ؟ صرتِ ابن بلد!",
+  /** Gen Z English parallel — the educational mirror of "صرت ابن بلد". */
+  slang: "You're a real one now! Straight up native status ⚡",
   /** Back-to-map action label. */
   backToMap: "ارجع للخريطة",
 } as const;

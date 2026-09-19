@@ -58,6 +58,13 @@ export function TraceDrawer({ isOpen, onClose, unlockedItems, total }: TraceDraw
               <p className="font-arabic mt-0.5 text-xs text-amber-900/70">
                 {unlockedItems.length} / {total} أثر مكتشف
               </p>
+              {/* hand-drawn doodle progress bar */}
+              <div className="mt-1.5 h-3 w-44 overflow-hidden rounded-full border border-amber-900/30 bg-[#EFDDBF]">
+                <div
+                  className="progress-doodle h-full rounded-full bg-[#6b7f52] transition-all duration-500"
+                  style={{ width: `${total ? Math.round((unlockedItems.length / total) * 100) : 0}%` }}
+                />
+              </div>
             </div>
           </div>
           <button
@@ -90,7 +97,7 @@ export function TraceDrawer({ isOpen, onClose, unlockedItems, total }: TraceDraw
                 />
                 <p className="pr-6 text-lg font-bold leading-snug text-amber-950">{item.phrase}</p>
                 <p className="mt-2">
-                  <span dir="ltr" className="inline-block font-mono text-sm text-amber-800">
+                  <span dir="ltr" className="slash-highlight inline-block rounded-[0.18em] px-1 py-0.5 font-mono text-sm font-extrabold text-amber-900">
                     {item.targetSlang}
                   </span>
                 </p>
@@ -118,6 +125,38 @@ export function TraceDrawer({ isOpen, onClose, unlockedItems, total }: TraceDraw
               </li>
             ))}
           </ul>
+        )}
+
+        {/* locked traces — greyed-out, hand-drawn padlock, discover CTA */}
+        {unlockedItems.length < total && (
+          <div className="mt-6">
+            <h3 className="font-display mb-2 text-lg font-bold text-amber-950/70">
+              آثار لسه مقفلة 🔒
+            </h3>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {Array.from({ length: total - unlockedItems.length }).map((_, idx) => (
+                <li
+                  key={idx}
+                  className="relative rounded-sm border-2 border-dashed border-amber-900/20 bg-kraft-100/60 p-3 opacity-70"
+                >
+                  <span className="pointer-events-none absolute right-3 top-3 opacity-50" aria-hidden>
+                    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="var(--color-ink-700)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9.6 11.4v-2a2.4 2.4 0 0 1 4.8 0v2" />
+                      <path d="M8.4 11.4h7.2v6.4H8.4z" />
+                      <circle cx="12" cy="13.7" r="0.8" />
+                      <path d="M11.6 14.3l.4 1.3h.7l.3-1.3" />
+                    </svg>
+                  </span>
+                  <p className="pr-6 font-arabic text-sm font-bold leading-snug text-ink-700">
+                    أثر مجهول
+                  </p>
+                  <p className="font-arabic mt-1 pr-6 text-xs leading-relaxed text-ink-500">
+                    استكشف الخريطة وتحدث مع أهل بغداد لفتحه 🔍
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </aside>
     </>

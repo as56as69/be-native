@@ -169,6 +169,12 @@
   --color-line-300: #e0c69c;
   --color-wasabi-400: #a3b18a;
   --color-wasabi-600: #6b7f52;
+
+  /* Young highlighter / marker accents — highlighter pen energy on notebook paper */
+  --color-highlighter: #ffe066;
+  --color-marker-500: #f26a3f;
+  --color-marker-600: #dd5530;
+  --color-marker-700: #b93a1a;
 }
 
 @layer base {
@@ -196,6 +202,23 @@
         color-mix(in srgb, var(--color-kraft-400) 26%, transparent) 1.55rem,
         color-mix(in srgb, var(--color-kraft-400) 26%, transparent) calc(1.55rem + 1.5px)
       );
+  }
+
+  /* felt-tip highlighter streak across the English slang line */
+  .slash-highlight {
+    background:
+      linear-gradient(
+        104deg,
+        transparent 1%,
+        color-mix(in srgb, var(--color-highlighter) 72%, transparent) 2.4%,
+        color-mix(in srgb, var(--color-highlighter) 50%, transparent) 10%,
+        color-mix(in srgb, var(--color-highlighter) 72%, transparent) 93%,
+        transparent 98%
+      );
+    padding: 0.14em 0.3em;
+    border-radius: 0.18em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
   }
 
   .notebook-card {
@@ -240,6 +263,42 @@
     transform 80ms ease,
     box-shadow 80ms ease,
     background-color 120ms ease;
+}
+
+/* hand-sketched input line — wobbly, not a perfect digital border */
+.sketch-input {
+  border: 0;
+  border-bottom: 2.5px solid var(--color-kraft-600);
+  border-radius: 0.4rem 0.4rem 0 0;
+  box-shadow: inset 0 -4px 0 -2px rgb(46 32 27 / 0.08);
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+.sketch-input:focus {
+  border-bottom-color: var(--color-wasabi-600);
+  box-shadow: 0 oney 0 3px var(--color-highlighter);
+}
+
+/* hand-scrawled "Done!" sticker after a successful redeem */
+.done-sticker {
+  background-image:
+    repeating-linear-gradient(
+      -8deg,
+      transparent,
+      transparent 5px,
+      rgb(46 32 27 / 0.05) 5px,
+      rgb(46 32 27 / 0.05) 6px
+    );
+}
+
+/* hand-drawn progress bar — tapered ends + sketchy hatch */
+.progress-doodle {
+  background:
+    repeating-linear-gradient(
+      -55deg,
+      rgba(255 255 255 / 0.18) 0 2px,
+      transparent 2px 5px
+    );
+  border-radius: 9999px;
 }
 .btn-doodle:hover {
   background-color: var(--color-kraft-200);
@@ -295,6 +354,90 @@
 }
 .pin-wobble {
   animation: pin-wobble 3.2s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Investigation board — Red Yarn System (red thread + pushpins)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* thread-flow keyframes — deprecated: continuous dash marching forward is gone.
+   We now animate the thread DRAWING when a new node unlocks (stroke-dashoffset),
+   plus a one-shot pluck wobble when a node is clicked/selected. */
+
+@keyframes thread-pluck {
+  0%, 100% { filter: none; transform: translate(0, 0); }
+  22% { filter: drop-shadow(0.6px 0.8px 0 rgba(185, 28, 28, 0.45)); }
+  45% { filter: none; transform: translate(0, 0); }
+}
+
+/* Red yarn — crisp, weighty, gravity-sagged, no marching ants.
+   Use a layered double-path: a dark shadow pass + a bright red pass.
+   Extra generous stroke-width so the yarn clearly reads as a thread
+   (not a thin PCB wire). */
+.yarn-shadow {
+  stroke: color-mix(in srgb, var(--thread-color, #b91c1c) 32%, #2a1513);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  opacity: 0.28;
+}
+.yarn-core {
+  stroke: var(--thread-color, #b91c1c);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  opacity: 0.92;
+}
+
+/* Drawing animation — the red yarn unrolls from the last pin toward the new
+   node exactly once (classic hand-drawn investigation reveal). */
+.yarn-draw {
+  stroke-dasharray: var(--yarn-length, 80) var(--yarn-length, 80);
+  stroke-dashoffset: var(--yarn-length, 80);
+  animation: yarn-draw 0.72s cubic-bezier(0.5, 0.1, 0.4, 1) forwards;
+}
+@keyframes yarn-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* One-shot pluck — the pinned thread wobbles like a plucked oud string when
+   the node card is clicked. */
+.yarn-pluck {
+  animation: yarn-pluck 0.5s ease-out;
+}
+@keyframes yarn-pluck {
+  0%, 100% { filter: none; }
+  22% { filter: drop-shadow(0.6px 0.8px 0 rgba(185, 28, 28, 0.5)); }
+  38% { filter: none; }
+  52% { filter: drop-shadow(-0.4px -0.2px 0 rgba(185, 28, 28, 0.35)); }
+  68% { filter: none; }
+}
+
+/* Marching dash OFF by default. */
+.thread-flow {
+  /* no animation — dead */
+  animation: none;
+}
+
+
+/* pulsing "you are here" beacon on the map */
+@keyframes here-beacon {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.6); opacity: 0.4; }
+}
+.here-beacon {
+  transform-origin: center;
+  animation: here-beacon 1.5s ease-in-out infinite;
+}
+
+/* paper sticker wobble on hover — like lifting a sticky note by hand */
+@keyframes card-wobble {
+  0%, 100% { rotate: 0deg; }
+  20% { rotate: -1.8deg; }
+  40% { rotate: 1.5deg; }
+  60% { rotate: -1deg; }
+  80% { rotate: 0.8deg; }
+}
+.card-wobble:hover {
+  animation: card-wobble 420ms ease-in-out;
 }
 
 /* notebook sticker badge on the DoodleMap */

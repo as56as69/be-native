@@ -14,6 +14,7 @@ create index if not exists opening_quotes_active_sort_idx
   on public.opening_quotes (is_active, sort_order, created_at);
 
 insert into public.opening_quotes (text_ar, text_en, sort_order) values
+  ('بغداد بيها حجي.. وسوالف ماتنحجي', 'Baghdad never runs out of talk — never. But the realest stories? No cap... those don''t get told. They just live in you. Lowkey, that''s what hits different. Real ones know.', 0),
   ('لكل شارع في بغداد حكاية تنتظر من يسمعها', 'Every street in Baghdad has a story waiting to be heard.', 10),
   ('السفر الحقيقي يبدأ حين تعرف المدينة بعيون أهلها', 'Real travel begins when the city opens its doors to you.', 20),
   ('لا تكتفِ بالزيارة… عِش معنا يومًا بغداديًّا', 'Don''t just visit — live a Baghdad day with us.', 30),

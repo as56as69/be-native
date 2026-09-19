@@ -143,7 +143,10 @@ export function VibeMapperEngine({ generateVibe, saveToTraces, entries }: VibeMa
   const latestOutputs = reportIndex >= 0 ? reports[reportIndex]?.outputs : undefined;
 
   return (
-    <div className="rounded-sm border border-amber-900/20 bg-[#FFFDF7] p-5 shadow-[2px_3px_0_rgb(0_0_0/0.08)]">
+    <div className="rounded-xl border-2 border-amber-900/25 bg-[#FBF3DC] p-5 shadow-[3px_5px_0_rgb(0_0_0/0.12)] rotate-[0.4deg]">
+      {/* tape — the engine is a stuck-on interactive tool */}
+      <span className="tape absolute -top-3 left-1/2 -translate-x-1/2" aria-hidden />
+
       <h3 className="font-display mb-1 text-xl font-bold leading-none text-amber-950">
         محرك الترجمة الحسية (Gen Z Vibe Engine)
       </h3>
@@ -182,7 +185,7 @@ export function VibeMapperEngine({ generateVibe, saveToTraces, entries }: VibeMa
           <button
             type="submit"
             disabled={generating || phrase.trim().length === 0}
-            className="font-arabic w-full rounded-full border border-[#5C3A21]/50 bg-[#FFFDF7] px-5 py-2 text-sm font-semibold text-[#5C3A21] transition-colors hover:bg-[#EFDDBF] disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            className="font-arabic w-full rounded-full bg-[#2e201b] px-5 py-2.5 text-sm font-bold text-kraft-50 shadow-[3px_4px_0_rgb(0_0_0/0.28)] transition-all hover:bg-[#4a3628] hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
           >
             {generating ? "يولّد…" : "توليد المعنى الحسي ⚡"}
           </button>
