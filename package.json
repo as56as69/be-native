@@ -1,0 +1,31 @@
+{
+  "name": "be-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Be Native — warm notebook-style PWA (client / server / shared)",
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n client,server -c cyan,magenta \"npm:dev:*\"",
+    "dev:client": "npm run dev -w @be-native/client",
+    "dev:server": "npm run dev -w @be-native/server",
+    "typecheck": "npm run typecheck -w @be-native/shared && npm run typecheck -w @be-native/client && npm run typecheck -w @be-native/server",
+    "build": "npm run typecheck && npm run build:client && npm run build:server",
+    "build:client": "npm run build -w @be-native/client",
+    "build:server": "npm run build -w @be-native/server",
+    "start": "npm run start -w @be-native/server",
+    "db:seed": "npm run db:seed -w @be-native/server",
+    "test": "npm run test -w @be-native/server",
+    "preview": "npm run preview -w @be-native/client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

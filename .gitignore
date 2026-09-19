@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dev-dist/
+build/
+*.tsbuildinfo
+
+# Environment variables — never commit secrets
+.env
+.env.*
+!.env.example
+
+# Runtime local dev database (regenerated on boot)
+server/.local-db.json
+
+# Supabase local runtime artifacts (may contain generated secrets)
+supabase/.temp/
+supabase/.branches/
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Compiled native addons
+*.node
