@@ -26,12 +26,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "amir",
         text_en_slang: "Yo, welcome to Baghdad! So what's it gonna be — liquid fire tea or a real arabic brew?",
-        text_ar_hint: "المقصود بالموقف: البائع يستقبلك بعرض واضح",
+        text_ar_hint: "يعني: البائع يرحب بيك ويعرض عليك: چاي حار ولا قهوة عربية",
         options: [
           {
             id: "o1",
             text_en_slang: "Yo Amir! Hook me up with that blazing tea, stat.",
-            text_ar_equivalent: "هلا أمير! عطني چاي مهيل حرّاق",
+            text_ar_equivalent: "هلا أمير! عطني چاي مهيّل حرّاق",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n2",
@@ -39,7 +39,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
           {
             id: "o2",
             text_en_slang: "I would like to purchase a cup of tea, please, as quickly as possible.",
-            text_ar_equivalent: "أريد شراء كاسة شاي من فضلك في أسرع وقت",
+            text_ar_equivalent: "أرغب في شراء كوب من الشاي في أقرب وقت ممكن",
             is_correct: false,
             xp_reward: 0,
             next_node_id: null,
@@ -50,12 +50,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "amir",
         text_en_slang: "Here you go, fam — still steaming. Anyway, how was the trip? You look wiped.",
-        text_ar_hint: "المقصود بالموقف: يسأل عن السفر لأنك شكلّك تعبان",
+        text_ar_hint: "يعني: يسألك عن الرحلة لان شكلگ تعبان",
         options: [
           {
             id: "o1",
             text_en_slang: "Bro, I'm fried — that flight hit different.",
-            text_ar_equivalent: "أنا محروق — الرحلة طگّة",
+            text_ar_equivalent: "أنا محروق — الرحلة طگّتني",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n3",
@@ -74,7 +74,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "baba_amin",
         text_en_slang: "Omelet comin' up! Tomatoes in? First one's on the house — my treat.",
-        text_ar_hint: "المقصود بالموقف: بابا أمين يقدّم العجة مجاناً كضيافة",
+        text_ar_hint: "يعني: بابا أمين يگلك أول عجة هدية من عنده",
         options: [
           {
             id: "o1",
@@ -99,7 +99,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
   {
     id: "00000000-0000-4000-8000-0000000000e2",
     spot_id: "00000000-0000-4000-8000-000000000002",
-    title: "كرادة — چاي مهيل وسعر التعارف",
+    title: "كرادة — چاي مهيّل وسعر التعارف",
     location: "الرصافة — شارع كرادة",
     characters: [{ id: "abu_saleh", name_ar: "أبو صالح", name_en: "Abu Saleh" }],
     nodes: [
@@ -107,7 +107,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "abu_saleh",
         text_en_slang: "Heard you out here! Street's loud — you gotta shout it, buddy. What's good?",
-        text_ar_hint: "المقصود بالموقف: الشارع زحمة، لازم ترفع صوتك وتسلم سلام الشارع",
+        text_ar_hint: "يعني: زحمة الشارع صوچة — لازم ترفع صوتك وتسوي تحية الشارع",
         options: [
           {
             id: "o1",
@@ -131,12 +131,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "abu_saleh",
         text_en_slang: "There you go — cup's in your hand, homie. Price? Say it chill and we cool.",
-        text_ar_hint: "المقصود بالموقف: رخّص السعر بطريقة ودّية",
+        text_ar_hint: "يعني: يگلك السعر ببساطة — ردّ عليه بأسلوب صاحبين",
         options: [
           {
             id: "o1",
             text_en_slang: "My bad, boss — thought we were straight-up homies.",
-            text_ar_equivalent: "المعذرة! گلت أحنا صاحبين",
+            text_ar_equivalent: "سامحني أبو صالح! گلت أحنا صاحبين",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n3",
@@ -155,12 +155,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "abu_saleh",
         text_en_slang: "Enough small talk! This cup's a gift from the street to your fam — way to roll.",
-        text_ar_hint: "المقصود بالموقف: الگاصة هدية لك من الشارع",
+        text_ar_hint: "يعني: الگدح هدية الك من الشارع",
         options: [
           {
             id: "o1",
             text_en_slang: "Much love, man! Best tea in town — catch you tomorrow.",
-            text_ar_equivalent: "شكراً! أشهى چاي — بكرة اكو عندك",
+            text_ar_equivalent: "شكراً أبوي! أحلى چاي بالشارع — نشوفك بكرة",
             is_correct: true,
             xp_reward: 20,
             next_node_id: null,
@@ -191,7 +191,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "amjad",
         text_en_slang: "What's up, new blood! Before you touch the iron, what you got for me?",
-        text_ar_hint: "المقصود بالموقف: المدرب يبي تحية قبل التمرين",
+        text_ar_hint: "يعني: المدرب يريد تحية قبل لا تبدأ التمرين",
         options: [
           {
             id: "o1",
@@ -215,7 +215,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "amjad",
         text_en_slang: "Sick! First machine — bang out ten reps and tell me when you done. Packin' heat!",
-        text_ar_hint: "المقصود بالموقف: أمجد يشجعك تكمل العدّات",
+        text_ar_hint: "يعني: أمجد يشجعك تخلّص العدّات العشرة",
         options: [
           {
             id: "o1",
@@ -239,12 +239,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "habib",
         text_en_slang: "We made it, champ! Dig deep — tomorrow we runnin' it back at noon.",
-        text_ar_hint: "المقصود بالموقف: حبيب يحمّسك لجلسة بكرة",
+        text_ar_hint: "يعني: حبيب يحمّسك على جلسة بكرة",
         options: [
           {
             id: "o1",
             text_en_slang: "Bet, Habib! I'm all in — tomorrow's rematch. No cap.",
-            text_ar_equivalent: "شدّ حيلك! بكرة جاي معاك بلا خدعة",
+            text_ar_equivalent: "چاري يا حبيب! أنا معاك — بكرة الماتچ الجاي بلا خداع",
             is_correct: true,
             xp_reward: 20,
             next_node_id: null,
@@ -272,7 +272,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "abu_kareem",
         text_en_slang: "Where to, chief? Point me a street and name the district, don't be shy.",
-        text_ar_hint: "المقصود بالموقف: أبو كريم يبي الوجهة كاملة: الشارع والمحلة",
+        text_ar_hint: "يعني: أبو كريم يريد الوجهة كاملة: الشارع والمحلة",
         options: [
           {
             id: "o1",
@@ -296,12 +296,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "abu_kareem",
         text_en_slang: "Mutanabbi! Jam-packed today. Market rate: a five. Deal or no deal?",
-        text_ar_hint: "المقصود بالموقف: المساومة مقبولة — ردّ بعرضك",
+        text_ar_hint: "يعني: السعر قابل للمساومة — ردّ عليه بعرضك",
         options: [
           {
             id: "o1",
             text_en_slang: "Aight — a four and you narrate the streets on the way. That's the deal.",
-            text_ar_equivalent: "أزين — أربعة وكلّك يشرح الشوارع على الطريق",
+            text_ar_equivalent: "أزين — أربعة وانت تحچيلي عن الشوارع بالطريق",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n3",
@@ -320,7 +320,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "abu_kareem",
         text_en_slang: "Poem Square, baby! Grab your spirit — you just touched the other side of the river.",
-        text_ar_hint: "المقصود بالموقف: وصلت ساحة المتنبي — كمل بقمّة التعامل",
+        text_ar_hint: "يعني: وصّلك ساحة المتنبي — كمّل بأخلاقك",
         options: [
           {
             id: "o1",
@@ -356,7 +356,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "abu_yusuf",
         text_en_slang: "Bookworm alert! You walked into my shop and Baghdad just got sweeter. What you huntin'?",
-        text_ar_hint: "المقصود بالموقف: ترحيب صاحب المكتبة + سؤالك عن المطلوب",
+        text_ar_hint: "يعني: صاحب المكتبة يرحب بيك ويسألك شتريد",
         options: [
           {
             id: "o1",
@@ -380,7 +380,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "abu_yusuf",
         text_en_slang: "Shahrazad? My pride and joy! Let's find the spine — straight from the heart.",
-        text_ar_hint: "المقصود بالموقف: أبواليوسف فرحان بديوانك",
+        text_ar_hint: "يعني: أبو اليوسف فرحان انك أردت ديوان شهرزاد",
         options: [
           {
             id: "o1",
@@ -404,7 +404,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "sadiq",
         text_en_slang: "So much talk up in here… take this poem — little gift from the square's corner.",
-        text_ar_hint: "المقصود بالموقف: صادق يهديك قصيدة من الساحة",
+        text_ar_hint: "يعني: صادق يهديلك قصيدة من الساحة",
         options: [
           {
             id: "o1",
@@ -440,12 +440,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "abu_haydar",
         text_en_slang: "Welcome, stranger! Come sit — the kebab's just comin' off the fire. What's your order?",
-        text_ar_hint: "المقصود بالموقف: أبو حيدر يرحب بيك ويسأل عن طلبك",
+        text_ar_hint: "يعني: أبو حيدر يرحب بيك ويسأل: شتريد تاكل؟",
         options: [
           {
             id: "o1",
             text_en_slang: "Hey Abu Haydar! Hook me up — kebab plate and a chai, and don't be shy on the bread.",
-            text_ar_equivalent: "هلا أبو حيدر! عطني كباب و چاي، ولا تبخل عليّ بالخبز",
+            text_ar_equivalent: "هلا أبو حيدر! عطني صحن كباب و چاي، وخبز لا تگصر!",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n2",
@@ -464,12 +464,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "abu_haydar",
         text_en_slang: "Kebab plate! My specialty. The fire's still hot — you want it spicy or chill?",
-        text_ar_hint: "المقصود بالموقف: يسألك عن درجة الحرّارة",
+        text_ar_hint: "يعني: يسألك: الكباب حرّاق ولا معتدل؟",
         options: [
           {
             id: "o1",
             text_en_slang: "Spicy as you got it, boss — my mouth's ready for war.",
-            text_ar_equivalent: "حرّاق شكد ما عندك — فمي جاهز للحرب",
+            text_ar_equivalent: "حرّاق شكد ما عندك — تمّي جاهز للحرب",
             is_correct: true,
             xp_reward: 20,
             next_node_id: "n3",
@@ -488,12 +488,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "umm_haydar",
         text_en_slang: "You ate like a champ! Now the chai's on the house — real Baghdad hospitality.",
-        text_ar_hint: "المقصود بالموقف: أم حيدر تقدّم چاي بالمجان، كرم ضيافة",
+        text_ar_hint: "يعني: أم حيدر تگلك الچاي هدية منّها",
         options: [
           {
             id: "o1",
             text_en_slang: "Umm Haydar, you're a legend! Best kebab in the whole east side.",
-            text_ar_equivalent: "أم حيدر، انتي أسطورة! أحسن كباب بكل الرصافة",
+            text_ar_equivalent: "أم حيدر، انتي أسطورة! أحلى كباب بالرصافة كلها",
             is_correct: true,
             xp_reward: 25,
             next_node_id: null,
@@ -524,12 +524,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "ghaydaa",
         text_en_slang: "Next! What's the problem today? Speak quick — the queue's not gettin' shorter.",
-        text_ar_hint: "المقصود بالموقف: الدكتورة تسألك عن الشكوى باستعجال لطيف",
+        text_ar_hint: "يعني: الدكتورة تسألك شكو منك — بأسلوب سريع لطيف",
         options: [
           {
             id: "o1",
             text_en_slang: "Doc, my head's poundin' and I feel dizzy — been like this since yesterday.",
-            text_ar_equivalent: "دكتورة، راسي يگلّب وأحس بدواخة — من أمس",
+            text_ar_equivalent: "دكتورة، راسي يگلب بيه وأحس بدوّاخة — من أمس",
             is_correct: true,
             xp_reward: 15,
             next_node_id: "n2",
@@ -548,12 +548,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "ghaydaa",
         text_en_slang: "Blood pressure's high. You been eatin' too much masgouf and stressin', huh?",
-        text_ar_hint: "المقصود بالموقف: التشخيص — ضغطك مرتفع من الأكل والضغط النفسي",
+        text_ar_hint: "يعني: التشخيص — ضغطك مرتفع من الأكل والهم",
         options: [
           {
             id: "o1",
             text_en_slang: "Caught me red-handed, doc! The masgouf was too good to resist.",
-            text_ar_equivalent: "انضبطت! المسگوف جان يگعّد",
+            text_ar_equivalent: "انضبطت! المسگوف جان گاعد على تمّي",
             is_correct: true,
             xp_reward: 20,
             next_node_id: "n3",
@@ -572,7 +572,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "haydar",
         text_en_slang: "Here's your script, chief! Rest up and take it easy — Baghdad won't run away.",
-        text_ar_hint: "المقصود بالموقف: الممرض حيدر يعطيك الروشتة ويطمّنك",
+        text_ar_hint: "يعني: الممرض حيدر يعطيك الروشتة ويطمنك لين ترتاح",
         options: [
           {
             id: "o1",
@@ -605,7 +605,7 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n1",
         character: "abu_jassem",
         text_en_slang: "Hey champ! Welcome to the kiosk — got everything from water to that candy you love.",
-        text_ar_hint: "المقصود بالموقف: أبو جاسم يرحب بيك ويعرض بضاعته",
+        text_ar_hint: "يعني: أبو جاسم يرحب بيك ويعرض عليك بضاعته",
         options: [
           {
             id: "o1",
@@ -629,12 +629,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n2",
         character: "abu_jassem",
         text_en_slang: "Cold soda, comin' up! Anything else — chips, gum, maybe a pack of tissues?",
-        text_ar_hint: "المقصود بالموقف: يعرض إضافات — ممكن تحتاج شي ثاني",
+        text_ar_hint: "يعني: يعرض عليك إضافات — يمكن تحتاج شي ثاني",
         options: [
           {
             id: "o1",
             text_en_slang: "Throw in some chips too — you know the ones, the spicy ones.",
-            text_ar_equivalent: "حطّلي هم شبس — اللي يعگّون، الحارّ",
+            text_ar_equivalent: "حطّلي هم شبس حارّ — اللي يحرّگ اللسان",
             is_correct: true,
             xp_reward: 20,
             next_node_id: "n3",
@@ -653,12 +653,12 @@ export const seededScenarioGraphs: SeedScenarioGraph[] = [
         id: "n3",
         character: "abu_jassem",
         text_en_slang: "Here you go, champ! Come back soon — I'll have fresh stuff by then.",
-        text_ar_hint: "المقصود بالموقف: يعطيك مشترياتك ويودّعك بابتسامة",
+        text_ar_hint: "يعني: يعطيك مشترياتك ويودعك بابتسامته",
         options: [
           {
             id: "o1",
             text_en_slang: "Say less, Abu Jassem! You're the best kiosk man in Baghdad.",
-            text_ar_equivalent: "شكراً أبو جاسم! انتي أحسن كشكچي ببغداد",
+            text_ar_equivalent: "شكراً أبو جاسم! انت أحسن كشكچي ببغداد",
             is_correct: true,
             xp_reward: 25,
             next_node_id: null,
