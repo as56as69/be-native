@@ -113,6 +113,42 @@ const seededSpots: Row[] = [
     is_locked: false,
     created_at: new Date().toISOString(),
   },
+  {
+    id: "00000000-0000-4000-8000-000000000006",
+    title_ar: "مطعم السيد",
+    title_en: "Al-Sayed Restaurant",
+    category: "restaurant",
+    vibe_description:
+      "صينية الكباب تگعد على المانع، ريحة فحم تقلب الجو، وتكتكة السكاكين مع ضحك الزباين — مطعم شعبي بمدينة الصدر.",
+    position_x: 44.0,
+    position_y: -32.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000007",
+    title_ar: "مستشفى بغداد التعليمي",
+    title_en: "Baghdad Teaching Hospital",
+    category: "hospital",
+    vibe_description:
+      "أضواء بيضاء هادئة، رائحة المعقمات، وأصوات أجهزة المراقبة — دكتورة غيداء تعالج بثقة والممرض حيدر يهوّن عليك.",
+    position_x: -28.0,
+    position_y: -1.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000008",
+    title_ar: "كشك أبو جاسم",
+    title_en: "Abu Jassem's Kiosk",
+    category: "street_vendor",
+    vibe_description:
+      "كشك زجاجي صغير كل شي فيه: مشروبات وعبوات وحلويات — أبو جاسم يگلّمك سعر كل شي بابتسامة ما تفارگه.",
+    position_x: 47.0,
+    position_y: 44.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
 ];
 
 const seededVouchers: Row[] = [
@@ -294,6 +330,88 @@ const seededScenarios: Row[] = [
       ],
       interrupts: [
         { fromNodeId: "n3", toNodeId: "n2", trigger_ar: "سأل عن ثمن القصيدة وهدية القراءة", allowed: true },
+      ],
+    },
+    provider_config: {
+      primary: { provider: "MOCK", model: "mock-1" },
+      tts: { provider: "ElevenLabs", voice: "arabi" },
+      temperature: 0.7,
+      maxTokens: 800,
+    },
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000a6",
+    spot_id: "00000000-0000-4000-8000-000000000006",
+    title: "مطعم السيد — كباب الصدر وفنجان الضحك",
+    system_prompt:
+      "سيناريو تفاعلي في مطعم شعبي بمدينة الصدر (الرصافة). صاحب المطعم (أبو حيدر) يقدّم كباب على الفحم وكاسات چاي عراقي، ويرحب بكل زبون بأهلاً وسهلاً. الدرس: طلب الوجبة بالعراقي + المصطلحات: پارچة، تمن، كباب، چاي أزرق. كل سطر بترجمة إنجليزية عامية (American slang). نهائياً بسطر «المعنى البغدادي» يشرح له الفرق بين الشعبي والفخم بضحكة.",
+    graph_rules: {
+      nodes: [
+        { id: "n1", npcId: "abu_haydar", order: 1, label_ar: "التحية واختيار المقعد" },
+        { id: "n2", npcId: "abu_haydar", order: 2, label_ar: "طلب الكباب والچاي" },
+        { id: "n3", npcId: "umm_haydar", order: 3, label_ar: "المساومة والدعابة" },
+      ],
+      orderErrors: [
+        { nodeId: "n2", message_ar: "شلون تطلب الأكل قبل ما تسلّم على أبو حيدر؟ التحية أول شي بهالمطعم الشعبي." },
+        { nodeId: "n3", message_ar: "ما تطلب الفاتورة هسه — خليّك چمّي لگعدة الضحك." },
+      ],
+      interrupts: [
+        { fromNodeId: "n2", toNodeId: "n1", trigger_ar: "سأل عن السعر وهو جان واقف على الباب", allowed: true },
+      ],
+    },
+    provider_config: {
+      primary: { provider: "MOCK", model: "mock-1" },
+      tts: { provider: "ElevenLabs", voice: "arabi" },
+      temperature: 0.7,
+      maxTokens: 800,
+    },
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000a7",
+    spot_id: "00000000-0000-4000-8000-000000000007",
+    title: "مستشفى بغداد — غيداء والتشخيص العراقي",
+    system_prompt:
+      "سيناريو في مستشفى بغداد التعليمي. دكتورة غيداء (طبيبة حادة بس مقهورة) تفحصك وتعلّمك مصطلحات صحية عراقية: إحني، سكري، ضيچان، دگّة قلب، ودكتور لازم. الممرض حيدر يهوّن الموقف. الدرس: وصف الألم والفحص + التفاعل المهذب مع الكادر الطبي. كل سطر بترجمة إنجليزية عامية. المعنى البغدادي يشرح «عيييت» و«چفيان» بمرح.",
+    graph_rules: {
+      nodes: [
+        { id: "n1", npcId: "ghaydaa", order: 1, label_ar: "التحية وسؤال الطبيبة" },
+        { id: "n2", npcId: "ghaydaa", order: 2, label_ar: "وصف الألم والفحص" },
+        { id: "n3", npcId: "haydar", order: 3, label_ar: "تهوين الموقف والروشتة" },
+      ],
+      orderErrors: [
+        { nodeId: "n2", message_ar: "ما تگلّم الدكتورة عن الألم قبل ما تعرف شسمك وشكو عليك!" },
+      ],
+      interrupts: [
+        { fromNodeId: "n3", toNodeId: "n1", trigger_ar: "طلب روشتة وهو لسه بباب العيادة", allowed: false },
+      ],
+    },
+    provider_config: {
+      primary: { provider: "MOCK", model: "mock-1" },
+      tts: { provider: "ElevenLabs", voice: "arabi" },
+      temperature: 0.7,
+      maxTokens: 800,
+    },
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000a8",
+    spot_id: "00000000-0000-4000-8000-000000000008",
+    title: "كشك أبو جاسم — تبديل الألف ورأس اخترت",
+    system_prompt:
+      "سيناريو في كشك زجاجي صغير بالرصافة. أبو جاسم (حچّاي سريع كنكاشة) يسلّمك بابتسامة ويدلّك على الأسعار. الدرس: أسماء الحلويات والمشروبات + المساومة الودّية + عبارات الإطراء: زين، عيني عليك، الله يحفظك. كل سطر بترجمة إنجليزية عامية. المعنى البغدادي يشرح «قشطة» و«سندويچ» بضحكة.",
+    graph_rules: {
+      nodes: [
+        { id: "n1", npcId: "abu_jassem", order: 1, label_ar: "التحية وعرض الكشك" },
+        { id: "n2", npcId: "abu_jassem", order: 2, label_ar: "اختيار الحلويات والمشروبات" },
+        { id: "n3", npcId: "abu_jassem", order: 3, label_ar: "المساومة والوداع" },
+      ],
+      orderErrors: [
+        { nodeId: "n2", message_ar: "تريد تختار من الكشك قبل ما تگلّم أبو جاسم؟ يگلّمك الأول بالتحية!" },
+      ],
+      interrupts: [
+        { fromNodeId: "n3", toNodeId: "n1", trigger_ar: "سأل عن سعر السندويچ وهو جان واقف برّا", allowed: true },
       ],
     },
     provider_config: {

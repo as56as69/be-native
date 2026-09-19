@@ -284,6 +284,9 @@ export const MAP_CHARGER_TEXTS: MapChargerText[] = [
   { id: "map-spot-gym", kind: "SPOT", label: "نادي الزيونة", terms: ["Ziyouna Gym", "جيم", "gym", "نادي"] },
   { id: "map-spot-taxi", kind: "SPOT", label: "تكسي بغداد", terms: ["Baghdad Taxi Ride", "تكسي", "taxi", "توصيل"] },
   { id: "map-spot-bookshop", kind: "SPOT", label: "مكتبة المتنبي", terms: ["Mutanabbi Bookshop", "مكتبة", "المتنبي", "bookshop"] },
+  { id: "map-spot-sayed", kind: "SPOT", label: "مطعم السيد", terms: ["Al-Sayed Restaurant", "مطعم السيد", "مطعم", "الصدر", "كباب", "restaurant"] },
+  { id: "map-spot-hospital", kind: "SPOT", label: "مستشفى بغداد التعليمي", terms: ["Baghdad Teaching Hospital", "مستشفى", "hospital", "باب المعظم", "صحة"] },
+  { id: "map-spot-kiosk", kind: "SPOT", label: "كشك أبو جاسم", terms: ["Abu Jassem's Kiosk", "كشك", "كشك أبو جاسم", "حلويات", "kiosk"] },
   {
     id: "map-recharge",
     kind: "RECHARGE",

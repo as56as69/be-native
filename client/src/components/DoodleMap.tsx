@@ -295,11 +295,14 @@ function toPercent(v: number): string {
  *  Coordinates are geographic: Karkh on the west bank (left), Rasafa east (right).
  *  River channel rule: keep the 38%–62% middle band empty (no pin/card/label). */
 const PIN_POS: Record<string, { x: number; y: number }> = {
-  "Al-Mansour Street Cafe": { x: 18, y: 15 },
-  "Karrada Street Tea Vendor": { x: 78, y: 40 },
-  "Ziyouna Gym": { x: 74, y: 60 },
-  "Baghdad Taxi Ride": { x: 20, y: 72 },
-  "Mutanabbi Bookshop": { x: 78, y: 74 },
+  "Al-Mansour Street Cafe": { x: 18, y: 18 },
+  "Karrada Street Tea Vendor": { x: 78, y: 44 },
+  "Ziyouna Gym": { x: 76, y: 63 },
+  "Baghdad Taxi Ride": { x: 20, y: 74 },
+  "Mutanabbi Bookshop": { x: 50, y: 90 },
+  "Al-Sayed Restaurant": { x: 88, y: 6 },
+  "Baghdad Teaching Hospital": { x: 9, y: 26 },
+  "Abu Jassem's Kiosk": { x: 62, y: 27 },
 };
 
 /* ─────────────────────── dynamic theming architecture ─────────────────────- */

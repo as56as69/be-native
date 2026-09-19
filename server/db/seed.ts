@@ -269,6 +269,42 @@ const seededSpots = [
     is_locked: false,
     created_at: new Date().toISOString(),
   },
+  {
+    id: "00000000-0000-4000-8000-000000000006",
+    title_ar: "مطعم السيد",
+    title_en: "Al-Sayed Restaurant",
+    category: "restaurant" as const,
+    vibe_description:
+      "صينية الكباب تگعد على المانع، ريحة فحم تقلب الجو، وتكتكة السكاكين مع ضحك الزباين — مطعم شعبي بمدينة الصدر.",
+    position_x: 48.0,
+    position_y: -33.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000007",
+    title_ar: "مستشفى بغداد التعليمي",
+    title_en: "Baghdad Teaching Hospital",
+    category: "hospital" as const,
+    vibe_description:
+      "أضواء بيضاء هادئة، رائحة المعقمات، وأصوات أجهزة المراقبة — دكتورة غيداء تعالج بثقة والممرض حيدر يهوّن عليك.",
+    position_x: -28.0,
+    position_y: -1.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000008",
+    title_ar: "كشك أبو جاسم",
+    title_en: "Abu Jassem's Kiosk",
+    category: "street_vendor" as const,
+    vibe_description:
+      "كشك زجاجي صغير كل شي فيه: مشروبات وعبوات وحلويات — أبو جاسم يگلّمك سعر كل شي بابتسامة ما تفارگه.",
+    position_x: 47.0,
+    position_y: 44.0,
+    is_locked: false,
+    created_at: new Date().toISOString(),
+  },
 ];
 
 async function seed() {
