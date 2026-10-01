@@ -14,6 +14,7 @@ import { createTransitRouter, type TransitDeps } from "./routes/transit.js";
 import { createVouchersRouter } from "./routes/vouchers.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createScenariosRouter } from "./routes/scenarios.js";
+import { createGSlangRouter } from "./routes/gslang.js";
 
 export interface AppDeps extends TransitDeps {}
 
@@ -135,6 +136,40 @@ export function createApp(deps: AppDeps = {}): Express {
   app.use("/api/scenarios", createScenariosRouter());
   app.use("/api/vouchers", createVouchersRouter());
   app.use("/api/admin", createAdminRouter());
+  app.use("/api/gslang", createGSlangRouter());
+
+  // Public read-only scraps feed for the Doodle Map overlay (قصاصات جويسم).
+  app.get(API_ROUTES.scraps, async (_req, res, next) => {
+    try {
+      const session = getDb();
+      const { data, error } = await session
+        .from("jweysim_scraps")
+        .select("*")
+        .eq("is_visible", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw new Error(`scraps query failed: ${error.message}`);
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Public read-only phrases feed for the mascot (عبارات جويسم).
+  app.get(API_ROUTES.phrases, async (_req, res, next) => {
+    try {
+      const session = getDb();
+      const { data, error } = await session
+        .from("jweysim_phrases")
+        .select("*")
+        .eq("is_visible", true)
+        .order("state", { ascending: true })
+        .order("sort_order", { ascending: true });
+      if (error) throw new Error(`phrases query failed: ${error.message}`);
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Not found" });

@@ -47,7 +47,7 @@ export function OpeningStory({ onDone, apiConnected }: { onDone: () => void; api
     <button
       type="button"
       onClick={onDone}
-      className="notebook-paper group flex min-h-dvh w-full cursor-pointer select-none flex-col items-center justify-center px-6 text-center outline-none"
+      className="notebook-paper group relative flex min-h-dvh w-full cursor-pointer select-none flex-col items-center justify-center px-6 text-center outline-none"
       aria-label="شغّل القصة"
     >
       {/* punched holes make it feel like a real notebook page */}
@@ -56,6 +56,10 @@ export function OpeningStory({ onDone, apiConnected }: { onDone: () => void; api
         <span className="paper-hole" />
         <span className="paper-hole" />
       </div>
+
+      {/* open-book spread: two page slabs behind the quote — like a notebook lying open */}
+      <span className="book-page book-page-left" aria-hidden />
+      <span className="book-page book-page-right" aria-hidden />
 
       <span className="stamp mb-8 rotate-2">Be Native • دليل بغداد الورقي</span>
 
@@ -95,6 +99,22 @@ export function OpeningStory({ onDone, apiConnected }: { onDone: () => void; api
           اضغط في أي مكان لتفتح الدفتر <span className="inline-block transition-transform group-hover:translate-y-0.5">↓</span>
         </span>
       </div>
+
+      {/* dog-ear fold + torn paper edge — the notebook is about to turn */}
+      {/* torn paper edge along the bottom — a ripped sheet of the notebook */}
+      <span className="torn-edge" aria-hidden>
+        <svg
+          viewBox="0 0 1200 26"
+          preserveAspectRatio="none"
+          className="block h-full w-full"
+          role="presentation"
+        >
+          <path
+            d="M0 0 H1200 V14 L1166 22 L1132 14 L1098 22 L1064 14 L1030 22 L996 14 L962 22 L928 14 L894 22 L860 14 L826 22 L792 14 L758 22 L724 14 L690 22 L656 14 L622 22 L588 14 L554 22 L520 14 L486 22 L452 14 L418 22 L384 14 L350 22 L316 14 L282 22 L248 14 L214 22 L180 14 L146 22 L112 14 L78 22 L44 14 L10 22 L0 14 Z"
+            style={{ fill: "color-mix(in srgb, var(--color-kraft-300) 78%, white)" }}
+          />
+        </svg>
+      </span>
     </button>
   );
 }

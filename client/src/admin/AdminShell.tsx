@@ -2,12 +2,15 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 
 import { AdminContent } from "./AdminContent";
+import { JweysimAdmin } from "./JweysimAdmin";
 import { ProviderManager } from "./ProviderManager";
 import { SpotStudio } from "./SpotStudio";
 import { VoucherGenerator } from "./VoucherGenerator";
 import { UserTracker } from "./UserTracker";
 import { SystemSettings } from "./SystemSettings";
 import { OpeningQuotes } from "./OpeningQuotes";
+import { ADMIN_THEMES, loadAdminTheme, saveAdminTheme } from "./adminThemes";
+import type { AdminThemeId } from "./adminThemes";
 
 const TAB_ICONS: Record<string, ReactNode> = {
   providers: (
@@ -19,6 +22,13 @@ const TAB_ICONS: Record<string, ReactNode> = {
     <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
       <path d="M10 2C6.7 2 4 4.7 4 8c0 4.5 6 10 6 10s6-5.5 6-10c0-3.3-2.7-6-6-6Z" />
       <circle cx="10" cy="8" r="2" />
+    </svg>
+  ),
+  jweysim: (
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      {/* قصاصة دفتر ممزقة */}
+      <path d="M5 3h10.5l1 1.5v11l-1.2.8H5.5L4.5 15V5.5L5 3Z" />
+      <path d="M6 7h8M6 10h8M6 13h5" />
     </svg>
   ),
   vouchers: (
@@ -61,6 +71,7 @@ const TABS = [
   { id: "content", label: "محرّر المحتوى" },
   { id: "providers", label: "المزوّدون" },
   { id: "spots", label: "استوديو النقاط" },
+  { id: "jweysim", label: "جويسم" },
   { id: "vouchers", label: "الكوبونات" },
   { id: "users", label: "المستخدمون" },
   { id: "quotes", label: "عبارات البداية" },
@@ -73,9 +84,12 @@ export function AdminShell() {
   const [tab, setTab] = useState<AdminTabId>(() =>
     window.location.pathname === "/admin/content" ? "content" : "providers"
   );
+  const [themeId, setThemeId] = useState<AdminThemeId>(() => loadAdminTheme());
+  const themeMeta = ADMIN_THEMES.find((t) => t.id === themeId) ?? ADMIN_THEMES[0];
+  const themeClass = themeMeta.className;
 
   return (
-    <div className="admin-bg flex min-h-dvh flex-col text-slatew-100">
+    <div className={`admin-bg flex min-h-dvh flex-col text-slatew-100 ${themeClass}`}>
       {/* top bar */}
       <header className="flex flex-wrap items-center gap-3 border-b border-slatew-700/60 px-4 py-3">
         <span className="font-display text-2xl leading-none tracking-tight text-kraft-300">غرفة العمليات</span>
@@ -88,6 +102,28 @@ export function AdminShell() {
         >
           ← العودة للخريطة
         </a>
+        {/* theme switcher — تبديل ثيم الداشبورد، ينحفظ بالمتصفح */}
+        <div className="flex items-center gap-1 rounded-full border border-slatew-700 bg-slatew-900/80 p-1" title="ثيم الداشبورد">
+          {ADMIN_THEMES.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setThemeId(t.id);
+                saveAdminTheme(t.id);
+              }}
+              aria-pressed={themeId === t.id}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-colors ${
+                themeId === t.id
+                  ? "bg-kraft-600/25 text-kraft-100"
+                  : "text-slatew-400 hover:bg-slatew-800/60 hover:text-slatew-100"
+              }`}
+            >
+              <span aria-hidden>{t.emoji}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
       </header>
 
       {/* tab nav */}
@@ -126,6 +162,7 @@ function TabBody({ tab }: { tab: AdminTabId }) {
     content: <AdminContent />,
     providers: <ProviderManager />,
     spots: <SpotStudio />,
+    jweysim: <JweysimAdmin />,
     vouchers: <VoucherGenerator />,
     users: <UserTracker />,
     quotes: <OpeningQuotes />,

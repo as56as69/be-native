@@ -8,6 +8,7 @@ import type {
 
 import { api } from "../lib/api";
 import { Badge, Btn, Empty, Field, NumberInput, Panel, TextInput, Toggle } from "./AdminUI";
+import { PrebakedPayloadEditor } from "./PrebakedPayloadEditor";
 import { ScenarioGraphEditor } from "./ScenarioGraphEditor";
 
 /** Dynamic 50-Locations categories: Gym, Street, Govt Office, Airport,
@@ -74,6 +75,8 @@ export function SpotStudio() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [sandbox, setSandbox] = useState<SandboxResponse | null>(null);
   const [sandboxBusy, setSandboxBusy] = useState(false);
+  const [prebakeBusy, setPrebakeBusy] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<{ id: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -161,6 +164,8 @@ export function SpotStudio() {
     setError(null);
     try {
       const spot = spots.find((s) => s.id === selectedId)!;
+      const scenario = spot.scenario;
+      if (scenario?.id) setSelectedScenario({ id: scenario.id });
       const result = await api.adminScenarios.sandbox({
         spot: { ...spot, ...spotDraft },
         scenario: {
@@ -292,6 +297,30 @@ export function SpotStudio() {
                     <Btn tone="warn" onClick={runSandbox} disabled={sandboxBusy}>
                       {sandboxBusy ? "…يولّد" : "⏵ شغّل السندبوكس"}
                     </Btn>
+                    {sandbox && (
+                      <Btn
+                        tone="primary"
+                        disabled={prebakeBusy}
+                        onClick={async () => {
+                          if (!sandbox) return;
+                          setPrebakeBusy(true);
+                          setError(null);
+                          setNotice(null);
+                          try {
+                            const scenario = spots.find((s) => s.id === selectedId)?.scenario ?? selectedScenario;
+                            if (!scenario?.id) throw new Error("لا يوجد سيناريو محفوظ لهذه النقطة — احفظ السيناريو أولاً");
+                            await api.adminScenarios.prebake(scenario.id, sandbox.payload);
+                            setNotice("حُفظ الناتج كنقطة ثابتة — السيرفر سيخدمه مباشرة بدون LLM ✓");
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : String(err));
+                          } finally {
+                            setPrebakeBusy(false);
+                          }
+                        }}
+                      >
+                        {prebakeBusy ? "…يحفظ" : "📌 حفظ كنقطة ثابتة"}
+                      </Btn>
+                    )}
                   </div>
                 </div>
                 {sandbox && (
@@ -304,6 +333,11 @@ export function SpotStudio() {
 
             {/* ── immersive scenario graph editor (scenario_graphs JSONB) ── */}
             <ScenarioGraphEditor spotId={selectedId} />
+
+            {/* ── Phase 2: manual prebaked payload editor ── */}
+            <PrebakedPayloadEditor
+              scenarioId={selected.scenario?.id ?? selectedScenario?.id ?? null}
+            />
           </>
         ) : (
           <Panel title="اختر نقطة"><Empty label="اختر نقطة من الجهة اليسرى" /></Panel>

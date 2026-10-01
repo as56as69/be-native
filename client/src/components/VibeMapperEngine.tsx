@@ -13,6 +13,7 @@ import {
   type VibePipelineStageId,
   type VibeTemplateId,
 } from "../hooks/useVibeMapper";
+import { jweysimBus } from "../core/jweysimBus";
 import { playPaperUnfold } from "../hooks/useVibeAudio";
 import { DERIVED_SCENARIO_VIBES, MAP_CHARGER_TEXTS, UI_GENZ_COPY } from "../data/seedData";
 import { VibeEngineCard } from "./VibeEngineCard";
@@ -100,6 +101,12 @@ export function VibeMapperEngine({ generateVibe, saveToTraces, entries }: VibeMa
     const entry = await generateVibe({ baghdadiPhrase, template: templateId }, (report) => {
       setReports((prev) => [...prev, report]);
       setReportIndex(STAGE_STEPS.findIndex((s) => s.id === report.stage));
+      /* جويسم يسمع: مرحلة Vibe — يقلب بگدحه (1/2/3) */
+      jweysimBus.emit("jweysim:interaction", {
+        kind: "tap",
+        targetId: `vibe-stage-${report.stage.toLowerCase()}`,
+        timestamp: Date.now(),
+      });
     });
     setGenerating(false);
     setLastEntry(entry);

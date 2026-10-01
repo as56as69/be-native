@@ -200,6 +200,24 @@ const seededProviders: Row[] = [
     cost_per_token: 0,
     created_at: new Date().toISOString(),
   },
+  {
+    id: "00000000-0000-4000-8000-0000000000c5",
+    name: "gemini",
+    api_key_encrypted: "MOCK-GEMINI",
+    is_active: true,
+    priority: 20,
+    cost_per_token: 0,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "00000000-0000-4000-8000-0000000000c6",
+    name: "abacus",
+    api_key_encrypted: null,
+    is_active: true,
+    priority: 1,
+    cost_per_token: 0.001,
+    created_at: new Date().toISOString(),
+  },
 ];
 
 const seededScenarios: Row[] = [
@@ -463,6 +481,176 @@ const seededSettings: Row[] = [
   { key: "slow_gate_ms", value: 60_000, updated_at: new Date().toISOString() },
 ];
 
+/** عبارات جويسم — تُزرع من JWEYSIM_PHRASES (jweysimData.ts) ليتحرك
+ *  الماسكوت بالكلام نفسه حتى بالـ local dev database. */
+const seededJweysimPhrases: Row[] = [
+  { id: "ph-idle-01", state: "idle", ar: "آي بيِن ويتن فور يو فور إيجرز، برو — ماي تي إز كولد، نو جوك.", en_sticker: "My tea's cold", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-idle-02", state: "idle", ar: "وونا هير أ سيكرت، برو؟ دس ماب لايك، توكس — بس تو ذا وانز هو أكتشالي ليستن. نو كاپ.", en_sticker: "The map talks", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-idle-03", state: "idle", ar: "هيلو؟ هاي برو، وير يو أت؟ آي أم أون ماي واي تو يو — هولد تايت، نو كاپ.", en_sticker: "On my way", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-bored-01", state: "bored", ar: "هاي... شلونك؟ أني وياك، مو ماشي.", en_sticker: "I'm here, bro", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-bored-02", state: "bored", ar: "دوس على أي مكان، نشوف بغداد سوا.", en_sticker: "Let's roll", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-bored-03", state: "bored", ar: "الملل يگعد يگعد... مثل الچاي، بس بلا طعم.", en_sticker: "Bored mode", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-sleep-01", state: "sleeping", ar: "هممم... شاورما... هممم...", en_sticker: "Shawarma dreams", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-sleep-02", state: "sleeping", ar: "همم... گدحي... لا تاخذه... همم...", en_sticker: "Don't touch my chai", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-sleep-03", state: "sleeping", ar: "تثاؤب طويل... وشخير خفيف يطلع من تحت النظارة.", en_sticker: "ZZZ... 🇺🇸🇮🇶", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-wake-01", state: "wake", ar: "أيوا! أني گعدت أشتغل! ...شغلت شنو؟ هاي... شغلة.", en_sticker: "I was working!", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-wake-02", state: "wake", ar: "اوكي دوكي... صحيت، صحيت. منو؟ آه، إنت. أهلاً.", en_sticker: "OKIE DOKIE 🤠", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-wake-03", state: "wake", ar: "گدحي... شكد نام گدحي؟ عيب عليك سويته يصحي قبلي.", en_sticker: "Chai woke up first", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-load-01", state: "loading", ar: "گعد أگص زگّاقة للخط... خطك طويل!", en_sticker: "Cutting corners", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-load-02", state: "loading", ar: "أدوّر على الشبكة بالزقاق الغلط... لحظة، هسه تطلع.", en_sticker: "WiFi hunting", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-load-03", state: "loading", ar: "گعد أچمّع الگصص... بغداد گصصها وايدة.", en_sticker: "Collecting stories", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-load-04", state: "loading", ar: "شوية... الچاي يبي يگعد يگعد يجهز.", en_sticker: "Chai needs time", sort_order: 4, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-err-01", state: "error", ar: "غلط... بس شلون تتعلم إلا تغلط؟ ارجع حاول، برو.", en_sticker: "No cap, try again", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-err-02", state: "error", ar: "هاي مو هي... بس عادي، عيدها. گصّتك لسه تكتب.", en_sticker: "Round two", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-err-03", state: "error", ar: "غلط؟ غلط بغداد؟ بغداد ما عندها غلط... عندها زحمة. ارجع جرب، فور ريل.", en_sticker: "Baghdad has no bugs", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-err-04", state: "error", ar: "مو هاي... بس أنا هم مرة گلطت بچايي. كمّل، برو.", en_sticker: "Keep going, bro", sort_order: 4, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-vic-01", state: "victory", ar: "أحسنت! هذي هي — نو كاپ، شلون عرفتها؟", en_sticker: "That's it, bro", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-vic-02", state: "victory", ar: "أيوا برو! هذي النتيجة اللي أريدها.", en_sticker: "Yessir!", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-vic-03", state: "victory", ar: "You rock!... يعني إنت صخرة، مو زحفة.", en_sticker: "YOU ROCK 🪨", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-vic-04", state: "victory", ar: "هسه صرت من أهل بغداد... باقي عليك الچاي والگصّة.", en_sticker: "Native status ⚡", sort_order: 4, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-click-01", state: "click", ar: "ايدك ايدك تره ازعل", en_sticker: "Hands off!", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-click-02", state: "click", ar: "عوف الكرش المقدس تعبت حتى خليته بالحجم", en_sticker: "Sacred belly", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-click-03", state: "click", ar: "شوف اكو سالفه وره التطبيق بس اني اعرفها", en_sticker: "I know the tea", sort_order: 3, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-walk-01", state: "walk", ar: "اني وين والمشي وين؟ أني بكرشي هذا، ما يتحمل مشي — نو كاپ.", en_sticker: "Belly can't walk", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-walk-02", state: "walk", ar: "ماكو كية كوستر تكتك يفوت مني... أخلص من المشي، فور ريل.", en_sticker: "Gimme a ride", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-jump-01", state: "jump", ar: "پيپ ذس، پيپ ذس!", en_sticker: "Peep this", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-jump-02", state: "jump", ar: "آي گت موڤز، آل ديم — نو كاپ.", en_sticker: "All moves, no cap", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-land-01", state: "land", ar: "اااخ! كله صوج الكرش... نو جيم، نو لايف، نو كاپ.", en_sticker: "No gym, no life", sort_order: 1, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "ph-land-02", state: "land", ar: "ااااخ! لا تكول لأحد مصار شي! ششش... إت نيڤر هابند.", en_sticker: "It never happened 🤫", sort_order: 2, is_visible: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+
+/** قصاصات جويسم — من jweysimData.ts (النسخة الأولى للمشروع ١٩ قصاصة):
+ *  كل قصاصة بها spotId → مربوط بالپين، أو free بإحداثيات posX/posY صريحة.
+ *  تبقى القصاصة السرية (secret-chai-stains) بدون پين. */
+const seededJweysimScraps: Row[] = [
+  {
+    id: "jweysim-scrap-cafe",
+    spot_id: "00000000-0000-4000-8000-000000000001",
+    title: "فيرست كوفي",
+    text: "فيرست تايم إن المنصور، أي فاوند ستريت باريستا. أي جات تو هيم: «هاي برو، واتس أب؟ وات تايبز يو هاف؟» هي ستيرد: «جاست وان كوفي.» أي كت: «نو واي — جيم مي دبل شوت إسبريسو.» هي هاندت مي ذا كاب: «يو أمريكن؟» أي سيد: «يو ناو إت، هوميي.» هي سيد: «أمريكن فروم باب الشرجي!» — أند وي كراكد أب.",
+    location_type: "pin",
+    pos_x: 25,
+    pos_y: 12,
+    reward_id: "seed-trace-001",
+    is_visible: true,
+    sort_order: 1,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-tea",
+    spot_id: "00000000-0000-4000-8000-000000000002",
+    title: "ماي تي",
+    text: "آي نو وات يو ثنكين: «دس گاي هاز أ تي پرابلِم.» نو كاپ؟ إتز ماي إيدنتيتي، برو. ويذاوت ماي تي، أي أم نوت جويسم ذا أمريكن. أي درينك إت تو ريميمبر هو آي أم. داتس نوت إديكشن — داتس ليجاسي. بيريود.",
+    location_type: "pin",
+    pos_x: 71,
+    pos_y: 50,
+    reward_id: "seed-trace-004",
+    is_visible: true,
+    sort_order: 2,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-gym",
+    spot_id: "00000000-0000-4000-8000-000000000003",
+    title: "أولد سكول",
+    text: "آي أم أولد سكول إن دس جيم ستاف — آي تريند فور إيجرز، برو. وين أي ووكد إن، دا كاپتن سكدن مي: «يو تريند بيفور؟» آي كت: «هيل ييه، فور ريل.» هي سيد: «يوَر بللك؟ دات ميكس يو لووك لايك أ فيت ليجند — بس يوَر بللي؟ إت رينز إفريثينغ.» آي شوك ماي بللي لايك أ ماد مان — هي أند هيز كرو وير دايين لافن. آي لافد ويدهيم تو — نو كاپ، بيريود.",
+    location_type: "pin",
+    pos_x: 83,
+    pos_y: 70,
+    reward_id: "seed-trace-002",
+    is_visible: true,
+    sort_order: 3,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-taxi",
+    spot_id: "00000000-0000-4000-8000-000000000004",
+    title: "درايڤر كريزي",
+    text: "وان تايم أي گوت تورد أب — أي هوپد إن أ كاب. دا درايڤر واز دراڤن مي كريزي: إيفري بامپ إن ذا رود، وي هت إت. لايك برو، دس گاي كودن تي سي فور شيت. أند ذا هول رايد؟ هي واز دامپن: گاس إز إكسپنصيڤ، نو جوب، أند آي هاف أ هاوس، كدز، أند إي وايف. وين أي گوت آوت، أي پد هيم دابل — كوز دس گاي بروك ماي هارت، فور ريل.",
+    location_type: "pin",
+    pos_x: 13,
+    pos_y: 80,
+    reward_id: "seed-trace-003",
+    is_visible: true,
+    sort_order: 4,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-bookshop",
+    spot_id: "00000000-0000-4000-8000-000000000005",
+    title: "دولمة",
+    text: "سَم فوکاز هيت المتنبي فور بوكس. أوذرز شو أب فور پيكس، فور ذا ڤايب. مي؟ أي شو أب إفري داي — فور دولمة فروم أم الدولمة. نو كاپ.",
+    location_type: "pin",
+    pos_x: 44,
+    pos_y: 84,
+    reward_id: "seed-vibe-003",
+    is_visible: true,
+    sort_order: 5,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-sayed",
+    spot_id: "00000000-0000-4000-8000-000000000006",
+    title: "بللي",
+    text: "دس ريسطورنت؟ دس واي أي گوت دس بللي. فور ريل. ماي داي إز نات فينيشد ويذاوت دير فود. تشريب، كباب، كص، دجاج شوي، قوزي — ماي أوتوماتيك، برو. نو بليسينغ أون السيد... فور دس فود. نو كاپ.",
+    location_type: "pin",
+    pos_x: 88,
+    pos_y: 31,
+    reward_id: "seed-trace-005",
+    is_visible: true,
+    sort_order: 6,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-hospital",
+    spot_id: "00000000-0000-4000-8000-000000000007",
+    title: "شوگر دوك",
+    text: "وان تايم آي گوت ماكسد أب — داي توک مي تو ذا هوسبي. دا دوك ووكت إن: «آي سيد ماكس، يوَر شوگر إز فُل أوت أوف ليفل.» آي واز لايك: «داتس كوز يو، سويتي — يو ميد مي ملت!» شي لاكد: «نو كاپ؟ فروم ناو أون: نو شوگر، بيتر تي. بيريود.» آي سيد: «ساي ليس — آي ثنك أوف يو إفري سيب، فور ريل.» شي كپت لافن — أند لَت مي ووك.",
+    location_type: "pin",
+    pos_x: 16,
+    pos_y: 32,
+    reward_id: "seed-vibe-005",
+    is_visible: true,
+    sort_order: 7,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-kiosk",
+    spot_id: "00000000-0000-4000-8000-000000000008",
+    title: "برايس هايك",
+    text: "وان تايم أي ونت تو باي سنيكرز أند مونستر — ماي أمامايتز، برو. آي لوكد أت ذا تاگ... فُل أوت أوف ماي رينج. آي كت: «هوي، شو دس؟ دس إز إكسپنصيڤ!» دا گاي إت ذا ستور سيد: «برو، تشيل — دس إز نوتينغ. تومورو، إت ويل بي إيڤن هاير.» آي كت: «هاير؟ هاون؟» هي سيد: «وي آر إن عراق، مان. إنفليشن هير إز لايك أ رن أواي مونستر — نو كاب.»",
+    location_type: "pin",
+    pos_x: 69,
+    pos_y: 34,
+    reward_id: "seed-vibe-004",
+    is_visible: true,
+    sort_order: 8,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "jweysim-scrap-secret",
+    spot_id: null,
+    title: "أور سيكرت",
+    text: "آي گوت أ سيكرت، برو — نو كاپ: آي واز نوت بورن إن أمريكا. آي واز بورن إن باب الشرجي، بغداد — أند ليرند ماي إنجليش إيتر. إفري نايت، آي دريم أوف زيس سيتي. إفري مورنينغ، آي ووك أب هير. داتس واي آي سيد آي أم أمريكن — إتز إيزير لايك دات. بس يو فاوند دس. يو نو ذا تروث ناو. ششش... دونت تل أي ون. دس إز أور سيكرت. فور ريل.",
+    location_type: "free",
+    pos_x: 50,
+    pos_y: 14,
+    reward_id: "seed-trace-001",
+    is_visible: true,
+    sort_order: 9,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
 // ------------------------------------------------------------------ state
 
 interface LocalState {
@@ -474,6 +662,8 @@ interface LocalState {
   scenario_graphs: Row[];
   opening_quotes: Row[];
   settings: Row[];
+  jweysim_scraps: Row[];
+  jweysim_phrases: Row[];
 }
 
 const TABLE_KEYS: Array<keyof LocalState> = [
@@ -485,6 +675,8 @@ const TABLE_KEYS: Array<keyof LocalState> = [
   "scenario_graphs",
   "opening_quotes",
   "settings",
+  "jweysim_scraps",
+  "jweysim_phrases",
 ];
 
 /**
@@ -504,6 +696,8 @@ interface PersistedState {
   scenario_graphs: Row[] | undefined;
   opening_quotes: Row[] | undefined;
   settings: Row[] | undefined;
+  jweysim_scraps: Row[] | undefined;
+  jweysim_phrases: Row[] | undefined;
 }
 
 function freshSeed(): LocalState {
@@ -516,6 +710,8 @@ function freshSeed(): LocalState {
     scenario_graphs: seededScenarioGraphs as unknown as Row[],
     opening_quotes: [...seededQuotes],
     settings: [...seededSettings],
+    jweysim_scraps: [...seededJweysimScraps],
+    jweysim_phrases: [...seededJweysimPhrases],
   };
 }
 

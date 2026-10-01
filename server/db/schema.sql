@@ -1,5 +1,5 @@
 -- =====================================================================
---  Be Native — Supabase/PostgreSQL schema
+--  Be Native — Supabase/PostgreSQL schema (additive)
 --  Applies cleanly to a fresh Supabase project or a local `supabase start`.
 --  Idempotent: safe to re-run in any order.
 -- =====================================================================
@@ -90,13 +90,55 @@ create table if not exists public.api_providers (
 
 create index if not exists api_providers_priority_idx on public.api_providers (is_active, priority);
 
+-- ------------------------------------------------------- jweysim_scraps
+-- «قصاصات جويسم» — tear-off notebook scraps pinned around the Doodle Map.
+-- Managed from the admin "جويسم" tab (not hardcoded in the client).
+-- location_type: 'pin'  → sits beside a spot (spot_id set)
+--                'free' → free % coordinates (pos_x/pos_y set)
+create table if not exists public.jweysim_scraps (
+  id            uuid primary key default gen_random_uuid(),
+  spot_id       uuid references public.spots (id) on delete set null,
+  title         text not null,
+  text          text not null default '',
+  location_type text not null default 'pin' check (location_type in ('pin', 'free')),
+  pos_x         double precision not null default 0,
+  pos_y         double precision not null default 0,
+  reward_id     text,
+  is_visible    boolean not null default true,
+  sort_order    integer not null default 0,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists jweysim_scraps_spot_idx on public.jweysim_scraps (spot_id);
+create index if not exists jweysim_scraps_visible_idx on public.jweysim_scraps (is_visible, sort_order);
+
+-- ----------------------------------------------------- jweysim_phrases
+-- «عبارات جويسم» — كل گلة يگولها الماسكوت حسب الحالة.
+-- تُحرَّر من تبويب «جويسم» باللوحة (بدل ما تكون مكتوبة بالكود).
+create table if not exists public.jweysim_phrases (
+  id          uuid primary key default gen_random_uuid(),
+  state       text not null default 'idle' check (state in
+              ('idle','bored','sleeping','wake','loading','error','victory','click','walk')),
+  ar          text not null,
+  en_sticker  text,
+  sort_order  integer not null default 0,
+  is_visible  boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists jweysim_phrases_state_idx on public.jweysim_phrases (state, sort_order);
+
 -- ------------------------------------------------------------------- RLS
-alter table public.users         enable row level security;
-alter table public.spots         enable row level security;
-alter table public.scenarios     enable row level security;
-alter table public.vouchers      enable row level security;
-alter table public.api_providers enable row level security;
-alter table public.settings      enable row level security;
+alter table public.users          enable row level security;
+alter table public.spots          enable row level security;
+alter table public.scenarios      enable row level security;
+alter table public.vouchers       enable row level security;
+alter table public.api_providers  enable row level security;
+alter table public.settings       enable row level security;
+alter table public.jweysim_scraps enable row level security;
+alter table public.jweysim_phrases enable row level security;
 
 -- Supabase ships the anon/authenticated/service_role roles on every project.
 grant usage on schema public to anon, authenticated;
@@ -106,6 +148,19 @@ drop policy if exists "spots are readable when unlocked" on public.spots;
 create policy "spots are readable when unlocked"
   on public.spots for select to anon, authenticated
   using (is_locked = false);
+
+-- Jweysim scraps are publicly readable (map overlay) but only service_role
+-- writes (admin API uses the service key).
+drop policy if exists "jweysim scraps readable" on public.jweysim_scraps;
+create policy "jweysim scraps readable"
+  on public.jweysim_scraps for select to anon, authenticated
+  using (true);
+
+-- Jweysim phrases are publicly readable (mascot speech) — admin writes only.
+drop policy if exists "jweysim phrases readable" on public.jweysim_phrases;
+create policy "jweysim phrases readable"
+  on public.jweysim_phrases for select to anon, authenticated
+  using (true);
 
 -- Users manage their own profile row.
 drop policy if exists "users manage own profile" on public.users;

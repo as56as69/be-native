@@ -13,13 +13,15 @@ import { api } from "../lib/api";
 import { Badge, Btn, Empty, Field, NumberInput, Panel, TextInput, Toggle } from "./AdminUI";
 
 /** Builds an editable starter draft when the spot has no graph yet. */
-function starter(spotId: string): ScenarioGraphDraft {
+export function starter(spotId: string): ScenarioGraphDraft {
   return {
     id: (globalThis.crypto?.randomUUID?.() ?? `draft-${Date.now()}`) as string,
     spot_id: spotId,
     title: "سيناريو جديد",
     location: "",
     characters: [{ id: "npc", name_ar: "بغدادي", name_en: "Local" }],
+    orderErrors: [],
+    interrupts: [],
     nodes: [
       {
         id: "n1",
@@ -400,6 +402,108 @@ export function ScenarioGraphEditor({ spotId }: { spotId: string }) {
           }] })}>
             + عقدة
           </Btn>
+        </div>
+
+        {/* ── order errors + interrupts (Phase 3) ──────────────────── */}
+        <div className="grid gap-4">
+          <div className="grid gap-2 rounded-md border border-slatew-700/70 bg-slatew-950/40 p-3">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-base text-slatew-300">أخطاء الترتيب (orderErrors)</span>
+              <Btn tone="ghost" onClick={() => setGraphAt({ orderErrors: [...(graph.orderErrors ?? []), { nodeId: nodeIds[0] ?? "", message_ar: "" }] })}>+ خطأ ترتيب</Btn>
+            </div>
+            <p className="text-[11px] leading-relaxed text-slatew-500">
+              لما المتعلم يضغط عقدة خارج تسلسلها الصح، المحرك يعرض هالرسالة بدل السماح بالتقدم.
+            </p>
+            {(graph.orderErrors ?? []).length === 0 && (
+              <p className="text-xs text-slatew-500">ماكو أخطاء ترتيب — التقدم مرتب فقط.</p>
+            )}
+            {(graph.orderErrors ?? []).map((err, i) => (
+              <div key={i} className="grid grid-cols-[110px_1fr_36px] items-center gap-2 rounded-md border border-slatew-700/60 bg-kraft-950/20 p-2">
+                <select
+                  value={err.nodeId}
+                  onChange={(e) =>
+                    setGraphAt({
+                      orderErrors: (graph.orderErrors ?? []).map((x, idx) => (idx === i ? { ...x, nodeId: e.target.value } : x)),
+                    })
+                  }
+                  className={nodeSelectCls}
+                >
+                  <option value="">— عقدة —</option>
+                  {nodeIds.map((id) => <option key={id} value={id}>{id}</option>)}
+                </select>
+                <TextInput
+                  value={err.message_ar}
+                  onChange={(e) =>
+                    setGraphAt({
+                      orderErrors: (graph.orderErrors ?? []).map((x, idx) => (idx === i ? { ...x, message_ar: e.target.value } : x)),
+                    })
+                  }
+                  placeholder="رسالة الخطأ بالعراقي…"
+                />
+                <Btn tone="danger" onClick={() => setGraphAt({ orderErrors: (graph.orderErrors ?? []).filter((_, idx) => idx !== i) })}>✕</Btn>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-2 rounded-md border border-slatew-700/70 bg-slatew-950/40 p-3">
+            <div className="flex items-center justify-between">
+              <span className="font-display text-base text-slatew-300">الانقطاعات (interrupts)</span>
+              <Btn tone="ghost" onClick={() => setGraphAt({ interrupts: [...(graph.interrupts ?? []), { fromNodeId: nodeIds[0] ?? "", toNodeId: nodeIds[1] ?? "", trigger_ar: "", allowed: true }] })}>+ انقطاع</Btn>
+            </div>
+            <p className="text-[11px] leading-relaxed text-slatew-500">
+              قفزة مسموحة/ممنوعة بين عقدتين. منو يحدث لما المتعلم يحاول (مثلاً) يقفز من عقدة 1 لعقدة 3 بدون 2.
+            </p>
+            {(graph.interrupts ?? []).length === 0 && (
+              <p className="text-xs text-slatew-500">ماكو انقطاعات — كل التقدم عبر الخيارات فقط.</p>
+            )}
+            {(graph.interrupts ?? []).map((inter, i) => (
+              <div key={i} className="grid grid-cols-[110px_110px_1fr_90px_36px] items-center gap-2 rounded-md border border-slatew-700/60 bg-slatew-950/50 p-2">
+                <select
+                  value={inter.fromNodeId}
+                  onChange={(e) =>
+                    setGraphAt({
+                      interrupts: (graph.interrupts ?? []).map((x, idx) => (idx === i ? { ...x, fromNodeId: e.target.value } : x)),
+                    })
+                  }
+                  className={nodeSelectCls}
+                >
+                  <option value="">— من —</option>
+                  {nodeIds.map((id) => <option key={id} value={id}>{id}</option>)}
+                </select>
+                <select
+                  value={inter.toNodeId}
+                  onChange={(e) =>
+                    setGraphAt({
+                      interrupts: (graph.interrupts ?? []).map((x, idx) => (idx === i ? { ...x, toNodeId: e.target.value } : x)),
+                    })
+                  }
+                  className={nodeSelectCls}
+                >
+                  <option value="">— إلى —</option>
+                  {nodeIds.map((id) => <option key={id} value={id}>{id}</option>)}
+                </select>
+                <TextInput
+                  value={inter.trigger_ar ?? ""}
+                  onChange={(e) =>
+                    setGraphAt({
+                      interrupts: (graph.interrupts ?? []).map((x, idx) => (idx === i ? { ...x, trigger_ar: e.target.value } : x)),
+                    })
+                  }
+                  placeholder="السبب/الشرط (اختياري)…"
+                />
+                <Toggle
+                  checked={inter.allowed !== false}
+                  onChange={(v) =>
+                    setGraphAt({
+                      interrupts: (graph.interrupts ?? []).map((x, idx) => (idx === i ? { ...x, allowed: v } : x)),
+                    })
+                  }
+                  label={inter.allowed !== false ? "مسموحة" : "ممنوعة"}
+                />
+                <Btn tone="danger" onClick={() => setGraphAt({ interrupts: (graph.interrupts ?? []).filter((_, idx) => idx !== i) })}>✕</Btn>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* live validation panel */}

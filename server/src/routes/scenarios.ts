@@ -12,9 +12,9 @@ import { scenarioGraphDraftForSpot } from "@be-native/shared";
 import { getDb } from "../db.js";
 import { callLLMWithFallback } from "../services/providerService.js";
 
-/** Strict 3s budget per provider attempt (spec: LLM fail/timeout ⇒ DB fallback). */
-const EVALUATE_TIMEOUT_MS = 3_000;
-const EVALUATE_MAX_ATTEMPTS = 2;
+/** Gemini (free tier) يحتاج وقتاً أطول بسبب مداراة الكوتا — لكن مع الـ fallback الآمن. */
+const EVALUATE_TIMEOUT_MS = 60_000;
+const EVALUATE_MAX_ATTEMPTS = 3;
 
 // -------------------------------------------------------------- helpers
 

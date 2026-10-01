@@ -6,6 +6,10 @@ import type {
   ContentUpdateInput,
   ContentUpdateResult,
   DbStatusResponse,
+  JweysimScrap,
+  JweysimScrapInput,
+  JweysimPhrase,
+  JweysimPhraseInput,
   OpeningQuote,
   SandboxResponse,
   Scenario,
@@ -14,6 +18,7 @@ import type {
   ScenarioGraph,
   ScenarioGraphDraft,
   ScenarioGraphIssue,
+  ScenarioPayload,
   Spot,
   SpotWithScenario,
   TransitStartInput,
@@ -164,6 +169,15 @@ export const api = {
       }),
     sandbox: (input: { spot: Spot; scenario?: Partial<Scenario> }) =>
       adminRequest<SandboxResponse>("/sandbox", { method: "POST", body: JSON.stringify(input) }),
+    prebake: (id: string, payload: ScenarioPayload) =>
+      adminRequest<{ ok: boolean }>(`/scenarios/${id}/prebake`, {
+        method: "PUT",
+        body: JSON.stringify({ payload }),
+      }),
+    payload: (id: string) =>
+      adminRequest<{ payload: ScenarioPayload | null }>(`/scenarios/${id}/payload`),
+    clearPrebake: (id: string) =>
+      adminRequest<{ ok: boolean }>(`/scenarios/${id}/prebake`, { method: "DELETE" }),
   },
 
   adminVouchers: {
@@ -202,5 +216,38 @@ export const api = {
         method: "PATCH",
         body: JSON.stringify(input),
       }),
+  },
+
+  scraps: () => request<JweysimScrap[]>(API_ROUTES.scraps),
+
+  phrases: () => request<JweysimPhrase[]>(API_ROUTES.phrases),
+
+  adminJweysim: {
+    list: () => adminRequest<JweysimScrap[]>("/jweysim/scraps"),
+    create: (input: JweysimScrapInput) =>
+      adminRequest<JweysimScrap>("/jweysim/scraps", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    update: (id: string, patch: Partial<JweysimScrapInput>) =>
+      adminRequest<JweysimScrap>(`/jweysim/scraps/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(patch),
+      }),
+    remove: (id: string) =>
+      adminRequest<{ ok: boolean }>(`/jweysim/scraps/${id}`, { method: "DELETE" }),
+    listPhrases: () => adminRequest<JweysimPhrase[]>("/jweysim/phrases"),
+    createPhrase: (input: JweysimPhraseInput) =>
+      adminRequest<JweysimPhrase>("/jweysim/phrases", {
+        method: "POST",
+        body: JSON.stringify(input),
+      }),
+    updatePhrase: (id: string, patch: Partial<JweysimPhraseInput>) =>
+      adminRequest<JweysimPhrase>(`/jweysim/phrases/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(patch),
+      }),
+    removePhrase: (id: string) =>
+      adminRequest<{ ok: boolean }>(`/jweysim/phrases/${id}`, { method: "DELETE" }),
   },
 };

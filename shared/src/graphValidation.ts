@@ -51,6 +51,8 @@ export function scenarioGraphDraftForSpot(
     title,
     location: "",
     characters: [{ id: "npc", name_ar: "بغدادي", name_en: "Local" }],
+    orderErrors: [],
+    interrupts: [],
     nodes: [
       {
         id: "n1",

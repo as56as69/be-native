@@ -100,8 +100,11 @@ export function createTransitRouter(deps: TransitDeps = {}): Router {
       // slow — gate the trip, no credit charged
       const gateMs = getSlowGateMs();
       const bypassFirst = getBypassFirstRequest();
+      // خفّضنا البوابة إلى 8 ثوانٍ (بدل 60) حتى لا ينتظر المستخدم طويلاً —
+      // التوليد السريع (abacus ~1s) لا يحتاج بوابة 60 ثانية.
+      const effectiveGateMs = (bypassFirst ? 0 : Math.min(gateMs, 8_000));
 
-      const gateResult = gate.request(input.user_id, input.from_spot_id, gateMs);
+      const gateResult = gate.request(input.user_id, input.from_spot_id, effectiveGateMs);
 
       if (gateResult.phase === "locked") {
         const retry = Math.max(0, Math.ceil((gateResult.unlockAtMs - gate.currentTime()) / 1000));

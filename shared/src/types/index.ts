@@ -67,15 +67,22 @@ export type Json =
   | { [key: string]: Json };
 
 /** Semantic shape for `scenarios.graph_rules` (multi-NPC, order errors, interrupts). */
+export interface ScenarioOrderError {
+  nodeId: string;
+  message_ar: string;
+}
+
+export interface ScenarioInterrupt {
+  fromNodeId: string;
+  toNodeId: string;
+  trigger_ar?: string;
+  allowed?: boolean;
+}
+
 export interface ScenarioGraphRules {
   nodes: Array<{ id: string; npcId: string; order: number; label_ar?: string }>;
-  orderErrors: Array<{ nodeId: string; message_ar: string }>;
-  interrupts: Array<{
-    fromNodeId: string;
-    toNodeId: string;
-    trigger_ar?: string;
-    allowed?: boolean;
-  }>;
+  orderErrors: ScenarioOrderError[];
+  interrupts: ScenarioInterrupt[];
 }
 
 /** Semantic shape for `scenarios.provider_config` (primary/fallback LLM + TTS). */
@@ -173,6 +180,10 @@ export type ScenarioGraph = {
   location: string;
   characters: ScenarioCharacter[];
   nodes: ScenarioNode[];
+  /** Order-mistake feedback: node the learner hit out of sequence → message. */
+  orderErrors?: ScenarioOrderError[];
+  /** Allowed/blocked detours between nodes (jump rules with trigger hints). */
+  interrupts?: ScenarioInterrupt[];
   is_active: boolean;
   created_at: string;
 };
@@ -322,6 +333,18 @@ export interface Database {
         Row: OpeningQuote;
         Insert: Partial<OpeningQuote>;
         Update: Partial<OpeningQuote>;
+        Relationships: [];
+      };
+      jweysim_scraps: {
+        Row: JweysimScrap;
+        Insert: Partial<JweysimScrap>;
+        Update: Partial<JweysimScrap>;
+        Relationships: [];
+      };
+      jweysim_phrases: {
+        Row: JweysimPhrase;
+        Insert: Partial<JweysimPhrase>;
+        Update: Partial<JweysimPhrase>;
         Relationships: [];
       };
     };
@@ -520,3 +543,85 @@ export type AdminVibeInput = Omit<VibeMapEntry, "id" | "source" | "createdAt">;
 
 /** localStorage envelope for the vibe dictionary. */
 export const VIBE_DICTIONARY_KEY = "native_slang_vibe_dictionary";
+
+// ── Alerts / Toast (modern) ──────────────────────────────────────────
+
+export interface AlertMessage {
+  id: string;
+  severity: "info" | "success" | "warning" | "error";
+  title: string;
+  body?: string;
+}
+
+export interface AlertResponse {
+  messages: AlertMessage[];
+}
+
+// ── Jweysim scraps (قصاصات جويسم) ────────────────────────────────────
+
+export type JweysimScrapLocationType = "pin" | "free";
+
+/** A tear-off notebook scrap pinned around the Doodle Map.
+ *  - location_type "pin"  → rendered beside the spot (spot_id)
+ *  - location_type "free" → rendered at the exact % coordinates (pos_x/pos_y)
+ */
+export interface JweysimScrap {
+  id: string;
+  /** Spot UUID when the scrap is pinned to a location (may be null for free). */
+  spot_id: string | null;
+  title: string;
+  text: string;
+  location_type: JweysimScrapLocationType;
+  pos_x: number;
+  pos_y: number;
+  reward_id: string | null;
+  is_visible: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Payload for creating/updating a scrap from the admin "جويسم" tab. */
+export type JweysimScrapInput = {
+  id?: string;
+  spot_id: string | null;
+  title: string;
+  text: string;
+  location_type: JweysimScrapLocationType;
+  pos_x: number;
+  pos_y: number;
+  reward_id: string | null;
+  is_visible: boolean;
+  sort_order: number;
+};
+
+export const JWEYSIM_SCRAPS_KEY = "native_slang_jweysim_scraps";
+
+// ── Jweysim phrases (عبارات جويسم) ─────────────────────────────────
+
+/** A single mascot phrase — the Arabic line + optional English sticker. */
+export interface JweysimPhrase {
+  id: string;
+  /** Which mascot state this phrase belongs to. */
+  state: "idle" | "bored" | "sleeping" | "wake" | "loading" | "error" | "victory" | "click" | "walk";
+  /** Arabic phrase (primary). */
+  ar: string;
+  /** Optional English slang sticker shown under the Arabic. */
+  en_sticker: string | null;
+  sort_order: number;
+  is_visible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Payload for creating/updating a phrase from the admin "جويسم" tab. */
+export type JweysimPhraseInput = {
+  id?: string;
+  state: JweysimPhrase["state"];
+  ar: string;
+  en_sticker: string | null;
+  sort_order: number;
+  is_visible: boolean;
+};
+
+export const JWEYSIM_PHRASES_KEY = "native_slang_jweysim_phrases";

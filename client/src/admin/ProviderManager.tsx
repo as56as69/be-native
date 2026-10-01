@@ -5,7 +5,7 @@ import type { ApiProvider } from "@be-native/shared";
 import { api } from "../lib/api";
 import { Badge, Btn, Empty, Field, NumberInput, Panel, TextInput, Toggle } from "./AdminUI";
 
-const PRESET_NAMES = ["openai", "anthropic", "grok", "gemini", "elevenlabs", "MOCK"];
+const PRESET_NAMES = ["openai", "anthropic", "grok", "gemini", "openrouter", "abacus", "elevenlabs", "MOCK"];
 
 type ProviderDraft = {
   name: string;

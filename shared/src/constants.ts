@@ -15,5 +15,8 @@ export const API_ROUTES = {
   scenarios: "/api/scenarios",
   vouchers: "/api/vouchers/redeem",
   quotes: "/api/quotes",
+  scraps: "/api/scraps",
+  phrases: "/api/phrases",
+  gslang: "/api/gslang",
   admin: "/api/admin",
 } as const;

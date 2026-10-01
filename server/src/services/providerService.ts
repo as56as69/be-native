@@ -35,7 +35,7 @@ export interface LlmCallResult {
   failures: string[];
 }
 
-const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_ATTEMPTS = 2;
 
 // -------------------------------------------------------------- helpers
@@ -59,6 +59,8 @@ function withTimeout<T>(task: Promise<T>, ms: number): Promise<T> {
 function envKeyFor(name: string): string | undefined {
   const map: Record<string, string> = {
     openai: "OPENAI_API_KEY",
+    openrouter: "OPENROUTER_API_KEY",
+    abacus: "ABACUS_API_KEY",
     anthropic: "ANTHROPIC_API_KEY",
     grok: "GROK_API_KEY",
     elevenlabs: "ELEVENLABS_API_KEY",
@@ -85,7 +87,8 @@ async function callOpenAiCompatible(
       model,
       messages,
       temperature: 0.7,
-      max_tokens: 2048,
+      max_tokens: 4000,
+      stream: false,
     }),
   });
   if (!res.ok) {
@@ -204,6 +207,78 @@ function mockContent(messages: LlmMessage[]): string {
   );
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  messages: LlmMessage[],
+  providerName = "gemini"
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const system = messages.find((m) => m.role === "system")?.content ?? "";
+  const chat = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  const contents = system
+    ? [{ role: "user", parts: [{ text: `${system}\n\n${chat[0]?.parts?.[0]?.text ?? ""}` }] }, ...chat.slice(1)]
+    : chat;
+
+  const doFetch = () =>
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        },
+      }),
+    });
+
+  // مداراة الكوتا (free tier: 5 req/min) — نحاول حتى 4 مرات نومةً بينها
+  const QUOTA_WAIT_MS = 16_000;
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const r = await doFetch();
+    if (r.ok || (r.status !== 429 && r.status !== 503)) {
+      res = r;
+      break;
+    }
+    const errBody = await r.text().catch(() => "");
+    const wait =
+      errBody.includes("quota") || r.status === 429
+        ? QUOTA_WAIT_MS
+        : 2_000 * (attempt + 1);
+    await delay(wait);
+  }
+  if (!res) throw new Error("GEMINI_BUSY_503");
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => "");
+    const hint = res.status === 429 || errBody.includes("quota")
+      ? "GEMINI_QUOTA/429"
+      : res.status === 503
+        ? "GEMINI_BUSY_503"
+        : `GEMINI_HTTP_${res.status}`;
+    throw new Error(hint);
+  }
+  const body = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const content = (body?.candidates?.[0]?.content?.parts ?? [])
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
+  if (!content) throw new Error("GEMINI_EMPTY_RESPONSE");
+  return content;
+}
+
 async function callProvider(provider: ActiveLlmProvider, messages: LlmMessage[]): Promise<string> {
   const name = provider.name.toLowerCase();
   const apiKey = provider.api_key_encrypted ?? envKeyFor(name) ?? "";
@@ -229,6 +304,25 @@ async function callProvider(provider: ActiveLlmProvider, messages: LlmMessage[])
         messages
       );
     }
+    case "openrouter": {
+      if (!apiKey) throw new Error("PROVIDER_NO_KEY");
+      return callOpenAiCompatible(
+        process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
+        apiKey,
+        process.env.OPENROUTER_MODEL ?? "z-ai/glm-5.3-flash",
+        messages
+      );
+    }
+    case "abacus": {
+      if (!apiKey) throw new Error("PROVIDER_NO_KEY");
+      const model = process.env.ABACUS_MODEL ?? "abacusai/smaug-flash";
+      return callOpenAiCompatible(
+        process.env.ABACUS_BASE_URL ?? "https://routellm.abacus.ai/v1",
+        apiKey,
+        model,
+        messages
+      );
+    }
     case "anthropic": {
       if (!apiKey) throw new Error("PROVIDER_NO_KEY");
       return callAnthropic(
@@ -236,6 +330,15 @@ async function callProvider(provider: ActiveLlmProvider, messages: LlmMessage[])
         apiKey,
         process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest",
         messages
+      );
+    }
+    case "gemini": {
+      if (!apiKey) throw new Error("PROVIDER_NO_KEY");
+      return callGemini(
+        apiKey,
+        process.env.GEMINI_MODEL ?? "gemini-flash-latest",
+        messages,
+        provider.name
       );
     }
     case "elevenlabs":

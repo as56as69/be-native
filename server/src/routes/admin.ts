@@ -9,6 +9,7 @@ import type {
   ScenarioGraph,
   ScenarioGraphDraft,
   ScenarioNode,
+  ScenarioPayload,
   Spot,
 } from "@be-native/shared";
 import {
@@ -21,6 +22,8 @@ import { loadSettings, updateSettings } from "../core/config.js";
 import { getDb } from "../db.js";
 import { generateScenarioPayloadFor } from "../services/scenarioEngine.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
+import type { JweysimScrap, JweysimScrapInput } from "@be-native/shared";
+import type { JweysimPhrase, JweysimPhraseInput } from "@be-native/shared";
 
 function makeCode(prefix: string, length: number): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
@@ -347,6 +350,8 @@ export function createAdminRouter(): Router {
         location: String(b.location ?? ""),
         characters: Array.isArray(b.characters) ? (b.characters as never[]) : [],
         nodes: Array.isArray(b.nodes) ? (b.nodes as never[]) : [],
+        orderErrors: Array.isArray(b.orderErrors) ? (b.orderErrors as never[]) : [],
+        interrupts: Array.isArray(b.interrupts) ? (b.interrupts as never[]) : [],
       };
 
       const issues = validateScenarioGraph(draft);
@@ -365,6 +370,8 @@ export function createAdminRouter(): Router {
         location: draft.location,
         characters: draft.characters,
         nodes: draft.nodes,
+        orderErrors: draft.orderErrors ?? [],
+        interrupts: draft.interrupts ?? [],
         is_active: true,
       };
 
@@ -452,6 +459,86 @@ export function createAdminRouter(): Router {
 
       const result = await generateScenarioPayloadFor(spot, scenario);
       res.json({ spot_id: spot.id, ...result });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // prebake: persist a generated/manual payload as a FIXED spot (no LLM later)
+  router.put("/scenarios/:id/prebake", async (req, res, next) => {
+    try {
+      const b = req.body ?? {};
+      const payload = b.payload as ScenarioPayload | undefined;
+      if (!payload || !Array.isArray(payload.dialogue) || payload.dialogue.length === 0) {
+        res.status(422).json({ error: "payload.dialogue is required" });
+        return;
+      }
+      const { data: existing, error: findErr } = await db
+        .from("scenarios")
+        .select("id, graph_rules")
+        .eq("id", req.params.id)
+        .maybeSingle();
+      if (findErr) throw findErr;
+      if (!existing) {
+        res.status(404).json({ error: "SCENARIO_NOT_FOUND" });
+        return;
+      }
+      const rules = (existing.graph_rules ?? {}) as Record<string, unknown>;
+      const { error: upErr } = await db
+        .from("scenarios")
+        .update({ graph_rules: { ...rules, prebaked: payload } } as never)
+        .eq("id", req.params.id);
+      if (upErr) throw upErr;
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // prebaked payload: fetch the FIXED payload for manual editing (Phase 2)
+  router.get("/scenarios/:id/payload", async (req, res, next) => {
+    try {
+      const { data, error } = await db
+        .from("scenarios")
+        .select("id, graph_rules")
+        .eq("id", req.params.id)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        res.status(404).json({ error: "SCENARIO_NOT_FOUND" });
+        return;
+      }
+      const rules = (data.graph_rules ?? {}) as Record<string, unknown>;
+      const prebaked = rules.prebaked as ScenarioPayload | undefined;
+      res.json({
+        payload: prebaked && Array.isArray(prebaked.dialogue) ? prebaked : null,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // clear prebaked: return the scenario to live LLM generation
+  router.delete("/scenarios/:id/prebake", async (req, res, next) => {
+    try {
+      const { data: existing, error: findErr } = await db
+        .from("scenarios")
+        .select("id, graph_rules")
+        .eq("id", req.params.id)
+        .maybeSingle();
+      if (findErr) throw findErr;
+      if (!existing) {
+        res.status(404).json({ error: "SCENARIO_NOT_FOUND" });
+        return;
+      }
+      const rules = { ...((existing.graph_rules ?? {}) as Record<string, unknown>) };
+      delete rules.prebaked;
+      const { error: upErr } = await db
+        .from("scenarios")
+        .update({ graph_rules: rules } as never)
+        .eq("id", req.params.id);
+      if (upErr) throw upErr;
+      res.json({ ok: true });
     } catch (err) {
       next(err);
     }
@@ -833,6 +920,166 @@ export function createAdminRouter(): Router {
         .eq("id", id);
       if (updateErr) throw updateErr;
       res.json({ success: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── جويسم shortlist (قصاصات) — إدارة كاملة من تبويب «جويسم» ────────
+  router.get("/jweysim/scraps", async (_req, res, next) => {
+    try {
+      const { data, error } = await db
+        .from("jweysim_scraps")
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      res.json((data ?? []) as JweysimScrap[]);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/jweysim/scraps", async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Partial<JweysimScrapInput>;
+      const title = String(b.title ?? "").trim();
+      if (!title) {
+        res.status(422).json({ error: "title is required" });
+        return;
+      }
+      const row = {
+        spot_id: b.spot_id ?? null,
+        title,
+        text: String(b.text ?? ""),
+        location_type: b.location_type === "free" ? "free" : "pin",
+        pos_x: Number(b.pos_x) || 0,
+        pos_y: Number(b.pos_y) || 0,
+        reward_id: b.reward_id ?? null,
+        is_visible: b.is_visible !== false,
+        sort_order: Number(b.sort_order) || 0,
+      };
+      const { data, error } = await db.from("jweysim_scraps").insert(row as never).select("*").single();
+      if (error) throw error;
+      res.status(201).json(data as JweysimScrap);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put("/jweysim/scraps/:id", async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Partial<JweysimScrapInput>;
+      const patch: Record<string, unknown> = {};
+      if (b.spot_id !== undefined) patch.spot_id = b.spot_id || null;
+      if (b.title !== undefined) patch.title = String(b.title);
+      if (b.text !== undefined) patch.text = String(b.text);
+      if (b.location_type !== undefined) patch.location_type = b.location_type === "free" ? "free" : "pin";
+      if (b.pos_x !== undefined) patch.pos_x = Number(b.pos_x) || 0;
+      if (b.pos_y !== undefined) patch.pos_y = Number(b.pos_y) || 0;
+      if (b.reward_id !== undefined) patch.reward_id = b.reward_id || null;
+      if (b.is_visible !== undefined) patch.is_visible = Boolean(b.is_visible);
+      if (b.sort_order !== undefined) patch.sort_order = Number(b.sort_order) || 0;
+      patch.updated_at = new Date().toISOString();
+
+      const { data, error } = await db
+        .from("jweysim_scraps")
+        .update(patch as never)
+        .eq("id", req.params.id)
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        res.status(404).json({ error: "SCRAP_NOT_FOUND" });
+        return;
+      }
+      res.json(data as JweysimScrap);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete("/jweysim/scraps/:id", async (req, res, next) => {
+    try {
+      const { error } = await db.from("jweysim_scraps").delete().eq("id", req.params.id);
+      if (error) throw error;
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── جويسم عبارات — إدارة كاملة من تبويب «جويسم» ────────────────────
+  router.get("/jweysim/phrases", async (_req, res, next) => {
+    try {
+      const { data, error } = await db
+        .from("jweysim_phrases")
+        .select("*")
+        .order("state", { ascending: true })
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      res.json((data ?? []) as JweysimPhrase[]);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/jweysim/phrases", async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Partial<JweysimPhraseInput>;
+      const ar = String(b.ar ?? "").trim();
+      const state = String(b.state ?? "");
+      if (!ar || !state) {
+        res.status(422).json({ error: "ar and state are required" });
+        return;
+      }
+      const row = {
+        state,
+        ar,
+        en_sticker: b.en_sticker ? String(b.en_sticker) : null,
+        sort_order: Number(b.sort_order) || 0,
+        is_visible: b.is_visible !== false,
+      };
+      const { data, error } = await db.from("jweysim_phrases").insert(row as never).select("*").single();
+      if (error) throw error;
+      res.status(201).json(data as JweysimPhrase);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.put("/jweysim/phrases/:id", async (req, res, next) => {
+    try {
+      const b = (req.body ?? {}) as Partial<JweysimPhraseInput>;
+      const patch: Record<string, unknown> = {};
+      if (b.state !== undefined) patch.state = String(b.state);
+      if (b.ar !== undefined) patch.ar = String(b.ar);
+      if (b.en_sticker !== undefined) patch.en_sticker = b.en_sticker ? String(b.en_sticker) : null;
+      if (b.sort_order !== undefined) patch.sort_order = Number(b.sort_order) || 0;
+      if (b.is_visible !== undefined) patch.is_visible = Boolean(b.is_visible);
+      patch.updated_at = new Date().toISOString();
+
+      const { data, error } = await db
+        .from("jweysim_phrases")
+        .update(patch as never)
+        .eq("id", req.params.id)
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        res.status(404).json({ error: "PHRASE_NOT_FOUND" });
+        return;
+      }
+      res.json(data as JweysimPhrase);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.delete("/jweysim/phrases/:id", async (req, res, next) => {
+    try {
+      const { error } = await db.from("jweysim_phrases").delete().eq("id", req.params.id);
+      if (error) throw error;
+      res.json({ ok: true });
     } catch (err) {
       next(err);
     }

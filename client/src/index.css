@@ -322,6 +322,27 @@
   box-shadow: 4px 6px 0 rgb(107 127 82 / 0.45);
 }
 
+/* ── استجابة الشاشات الصغيرة (≤360px): هيدر مدمج + أزرار أنعم ─────────── */
+@media (max-width: 360px) {
+  .notebook-header {
+    gap-x: 2;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+  .header-title {
+    font-size: 1.05rem; /* text-lg — أصغر من xl على الشاشات الصغيرة */
+  }
+  .fab-doodle {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+    box-shadow: 2px 3px 0 rgb(107 127 82 / 0.4);
+  }
+  .hide-360 {
+    display: none !important;
+  }
+}
+
 /* translucent masking tape strip */
 .tape {
   position: absolute;
@@ -345,6 +366,70 @@
     radial-gradient(circle at 38% 35%, var(--color-kraft-50) 0 18%, transparent 60%),
     radial-gradient(circle at 55% 60%, color-mix(in srgb, var(--color-ink-900) 22%, var(--color-kraft-200)) 0 45%, transparent 70%);
   box-shadow: inset 0 2px 4px rgb(46 32 27 / 0.25), 0 1px 1px rgb(255 255 255 / 0.7);
+}
+
+/* ── opening story: open-book spread ──────────────────────────────── */
+/* two offset kraft slabs: a notebook lying open in front of the quote */
+.book-page {
+  position: absolute;
+  top: 50%;
+  z-index: 0;
+  width: 21%;
+  height: 74%;
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-kraft-200) 55%, white), color-mix(in srgb, var(--color-kraft-300) 60%, white));
+  border: 1px solid color-mix(in srgb, var(--color-line-300) 50%, transparent);
+  box-shadow:
+    0 1px 2px rgb(46 32 27 / 0.18),
+    0 14px 28px -18px rgb(46 32 27 / 0.5);
+  pointer-events: none;
+  transform: translateY(-50%) rotate(var(--tilt, 0deg));
+}
+.book-page-left {
+  --tilt: -6deg;
+  left: -7%;
+  border-radius: 6px 10px 10px 6px;
+}
+.book-page-right {
+  --tilt: 6deg;
+  right: -7%;
+  border-radius: 10px 6px 6px 10px;
+}
+@media (max-width: 640px) {
+  .book-page {
+    width: 26%;
+  }
+}
+
+/* dog-ear folded corner at the bottom-right — hint the page will turn */
+.page-fold {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 0 52px 52px;
+  border-color: transparent transparent color-mix(in srgb, var(--color-kraft-300) 72%, white);
+  filter: drop-shadow(-3px 3px 2px rgb(46 32 27 / 0.22));
+  pointer-events: none;
+}
+
+/* torn paper edge along the bottom — a ripped sheet of the notebook */
+.torn-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  z-index: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 4px rgb(46 32 27 / 0.28));
+}
+@media (max-width: 640px) {
+  .torn-edge {
+    height: 18px;
+  }
 }
 
 /* gentle bounce for unlocked map pins */
@@ -713,4 +798,624 @@
     linear-gradient(rgb(141 160 152 / 0.07) 1px, transparent 1px),
     linear-gradient(90deg, rgb(141 160 152 / 0.07) 1px, transparent 1px);
   background-size: 24px 24px;
+}
+
+/* ── Admin theme engine ────────────────────────────────────────────────────
+   كل ألوان الداشبورد رايحة من متغيرات --color-slatew-* / --color-kraft-* .
+   كل ثيم = كلاس على جذر AdminShell يعيد تعريف المتغيرات — وكل اللوحات/
+   الأزرار/النصوص تتبع فوراً بدون لمس أي كومبوننت (Tailwind يرجّع
+   var(--color-...) داخل الكلاسات المولّدة).                                  */
+
+/* الوضع الافتراضي = القيم الأصلية (غرفة العمليات) — ما نكتب شي */
+
+/* ثيم: دفتر ورقي — نفس هوية تطبيق BeNative: خلفية كرافت فاتحة مثل الدفتر،
+   نصوص بنية داكنة، خطوط دفتر واضحة، وحواف دافئة. المقياس معكوس عن
+   الافتراضي: 950 = أفتح (خلفيات) و 100 = أغمق (نصوص) — مثل الدفتر الحقيقي. */
+.admin-theme-notebook.admin-bg {
+  --color-slatew-50: #050201;
+  --color-slatew-100: #090402;
+  --color-slatew-200: #0e0703;
+  --color-slatew-300: #140a04;
+  --color-slatew-400: #1c0f05;
+  --color-slatew-500: #231408;
+  --color-slatew-600: #2e1a09;
+  --color-slatew-700: #241307;
+  --color-slatew-800: #52371a;
+  --color-slatew-900: #75552c;
+  --color-slatew-950: #997a4e;
+
+  background-color: var(--color-slatew-950);
+  background-image:
+    repeating-linear-gradient(
+      transparent,
+      transparent 1.55rem,
+      color-mix(in srgb, #c99b5f 32%, transparent) 1.55rem,
+      color-mix(in srgb, #c99b5f 32%, transparent) calc(1.55rem + 1.5px)
+    );
+
+  /* الحقول: خلفية أقرب للأبيض + حدود بنية واضحة + نص داكن — تتباين عن اللوحات البيج */
+  input,
+  select,
+  textarea {
+    background-color: #fffdf7;
+    border-color: #8a6335;
+    color: #2b1c0e;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #a97e44;
+  }
+}
+
+/* ثيم: منتصف الليل — أسود مزرق عميق، مريح للعين بالليل */
+.admin-theme-midnight.admin-bg {
+  --color-slatew-50: #eef2fb;
+  --color-slatew-100: #dbe3f5;
+  --color-slatew-200: #b7c6e8;
+  --color-slatew-300: #8da4d6;
+  --color-slatew-400: #6683c0;
+  --color-slatew-500: #4a63a6;
+  --color-slatew-600: #3b4f87;
+  --color-slatew-700: #2f3f6d;
+  --color-slatew-800: #263254;
+  --color-slatew-900: #1d2740;
+  --color-slatew-950: #131a2e;
+  --color-kraft-50: #e8ecf7;
+  --color-kraft-100: #d4dcef;
+  --color-kraft-200: #aab8de;
+  --color-kraft-300: #7e93cb;
+  --color-kraft-400: #5b74b6;
+  --color-kraft-500: #465d9e;
+  --color-kraft-600: #3a4d85;
+  --color-kraft-700: #303e6d;
+  --color-kraft-800: #283355;
+  --color-kraft-900: #1d2440;
+  --color-kraft-950: #12162a;
+  background-color: var(--color-slatew-950);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Jweysim — «الدودل الهامشي اللي طلع من هامش الدفتر وعاش» 🍵
+   كل الحركات transform / opacity فقط (ما نلمس layout أبداً)،
+   بلا مكتبات، وكل الألوان من متغيرات دفتر BeNative الموجودة فوق.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── الطبقة العلوية: جويسم + الستيكر + القصاصات ─────────────────────────── */
+.jw-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70; /* فوق المحتوى (z-40/z-50) — لكن الجسم pointer-events: none */
+  pointer-events: none; /* ما يمنع أي تفاعل — القاعدة الذهبية ٢ */
+  overflow: hidden;
+}
+
+/* جويسم نفسه: جسمه شفاف للمس — إلا القصاصات (أزرار حقيقية) */
+.jw-mascot-wrap {
+  position: absolute;
+  pointer-events: auto; /* لمسة وحدة عليه = فزعة/عبارة */
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: left 0.9s cubic-bezier(0.34, 1.2, 0.64, 1), top 0.9s cubic-bezier(0.34, 1.2, 0.64, 1), bottom 0.9s cubic-bezier(0.34, 1.2, 0.64, 1);
+  z-index: 2;
+}
+/* الزوايا — جويسم يظهر ويتنقل بينها */
+.jw-corner { position: absolute; }
+.jw-corner.corner-lb { left: 6%; bottom: 3%; }
+.jw-corner.corner-rb { right: 6%; bottom: 3%; }
+.jw-corner.corner-lt { left: 6%; top: 18%; }
+.jw-corner.corner-rt { right: 6%; top: 18%; }
+
+/* قلب أفقي — يطلع من هامش اليمين أو اليسار */
+.jw-flip {
+  transform: scaleX(-1);
+}
+
+/* ── حالة الحركة الأساسية (تتطبق على كل الحالات) ───────────────────────── */
+.jw-state-idle,
+.jw-state-bored,
+.jw-state-sleeping,
+.jw-state-wake,
+.jw-state-loading,
+.jw-state-error,
+.jw-state-victory,
+.jw-state-click,
+.jw-state-walk,
+.jw-state-jump,
+.jw-state-land {
+  transform-origin: 50% 100%;
+  animation-duration: 2.4s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* الوقوف العادي — يرتاح ويرشف چاي */
+.jw-state-idle {
+  animation-name: jw-wobble;
+}
+
+/* يتململ/يميل — ملل الدفتر */
+.jw-state-bored {
+  animation-name: jw-bored;
+}
+
+/* نايم — ينخفض ويسوي شخير */
+.jw-state-sleeping {
+  animation-name: jw-sleeping;
+}
+
+/* يمشي ويتمايل */
+.jw-state-walk {
+  animation-name: jw-walk;
+}
+
+/* قفزة — طفو مع نبضة squash (يحافظ على stability بدل الطيران العشوائي) */
+.jw-state-jump {
+  animation-name: jw-jump;
+  animation-duration: 1.1s;
+  animation-iteration-count: 1;
+}
+
+/* هبوط — انضغاط أرضي ناعم يعقبه انتعاش (squash & stretch) */
+.jw-state-land {
+  animation-name: jw-land;
+  animation-duration: 0.5s;
+  animation-iteration-count: 1;
+}
+
+/* ينتظر التحميل — ينقر بأصبعه */
+.jw-state-loading {
+  animation-name: jw-loading;
+}
+
+/* ── keyframes: تحريك الجسم (transform فقط) ──────────────────────────────── */
+@keyframes jw-wobble {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  12% { transform: rotate(1deg) translateY(-0.5px); }
+  28% { transform: rotate(-0.8deg) translateY(0.4px); }
+  44% { transform: rotate(0.6deg) translateY(-0.3px); }
+  60% { transform: rotate(-0.4deg) translateY(0); }
+}
+
+/* الملل — ميلان كسول للجسم (transform فقط) */
+@keyframes jw-bored {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  18% { transform: rotate(-2.2deg) translateX(-0.6px); }
+  36% { transform: rotate(1.6deg) translateX(0.5px); }
+  54% { transform: rotate(-1.2deg) translateX(-0.3px); }
+  70% { transform: rotate(0.8deg) translateX(0.2px); }
+}
+
+/* النوم — ينخفض قليلاً ويميل على ظهره + زخات شخير */
+@keyframes jw-sleeping {
+  0%, 100% { transform: rotate(6deg) translateY(2px) scale(0.98); }
+  30% { transform: rotate(7deg) translateY(2.4px) scale(0.97); }
+  55% { transform: rotate(5.4deg) translateY(1.6px) scale(0.985); }
+  80% { transform: rotate(6.6deg) translateY(2.2px) scale(0.975); }
+}
+
+/* المشي — يتمايل قدماً على قدَم (زحلقة على الخيط) */
+@keyframes jw-walk {
+  0%, 100% { transform: rotate(-1.5deg) translateY(0); }
+  25% { transform: rotate(1.5deg) translateY(-1.2px); }
+  50% { transform: rotate(-1.5deg) translateY(0.2px); }
+  75% { transform: rotate(1.5deg) translateY(-1px); }
+}
+
+/* القفزة — Squash (انضغاط) عند الانطلاق + استطالة أثناء الطفو + Squash عند الهبوط */
+@keyframes jw-jump {
+  0% { transform: translateY(0) rotate(0deg) scale(1.12, 0.86); }
+  18% { transform: translateY(-14px) rotate(-4deg) scale(0.94, 1.1); }
+  40% { transform: translateY(-20px) rotate(0deg) scale(0.97, 1.06); }
+  62% { transform: translateY(-9px) rotate(3deg) scale(1.04, 0.96); }
+  82% { transform: translateY(0) rotate(-1deg) scale(0.84, 1.2); }
+  100% { transform: translateY(0) rotate(0deg) scale(1, 1); }
+}
+
+/* التحميل — يراوح وينتظر (مثل ما يگعد يگعد يگعد) */
+@keyframes jw-loading {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(-1deg) translateY(1px); }
+  50% { transform: rotate(0.5deg) translateY(-1px); }
+  75% { transform: rotate(-0.5deg) translateY(0.6px); }
+}
+
+/* الهبوط — انضغاط أرضي (squash) قصير + انتعاش مرن */
+@keyframes jw-land {
+  0% { transform: translateY(0) rotate(0deg) scale(1.24, 0.72); }
+  22% { transform: translateY( .5px) rotate(-1.6deg) scale(0.9, 1.12); }
+  48% { transform: translateY( .2px) rotate(0.8deg) scale(1.06, 0.96); }
+  72% { transform: translateY(0) rotate(-0.3deg) scale(0.98, 1.02); }
+  100% { transform: translateY(0) rotate(0deg) scale(1, 1); }
+}
+
+/* ── النصر / الخطأ / الفخ — حالات لحظية (one-shot) ──────────────────────── */
+.jw-state-victory {
+  animation-name: jw-victory;
+  animation-duration: 0.9s;
+  animation-iteration-count: 2; /* قفزتين فرح */
+}
+
+@keyframes jw-victory {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  18% { transform: translateY(-6px) rotate(-2.5deg) scale(1.03); }
+  36% { transform: translateY(0) rotate(0deg) scale(1); }
+  54% { transform: translateY(-4px) rotate(2deg) scale(1.02); }
+  72% { transform: translateY(0) rotate(0deg) scale(1); }
+  86% { transform: translateY(-2px) rotate(-1deg) scale(1.01); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+
+/* الخطأ — اهتزاز حائر (يا خوي، الشبكة طاحت) */
+.jw-state-error {
+  animation-name: jw-error;
+  animation-duration: 0.5s;
+  animation-iteration-count: 4;
+}
+
+@keyframes jw-error {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  15% { transform: translateX(-2.5px) rotate(-1.8deg); }
+  30% { transform: translateX(2px) rotate(1.4deg); }
+  45% { transform: translateX(-1.6px) rotate(-1deg); }
+  60% { transform: translateX(1.2px) rotate(0.8deg); }
+  75% { transform: translateX(-0.7px) rotate(-0.4deg); }
+}
+
+/* الفخ — ينقز من ورا القصاصة (scale 0→1 مثل الخطة ٥.٥) */
+.jw-state-click {
+  animation-name: jw-click;
+  animation-duration: 0.55s;
+  animation-iteration-count: 1;
+}
+
+@keyframes jw-click {
+  0% { transform: scale(0.2) rotate(-4deg); opacity: 0.2; }
+  55% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  75% { transform: scale(0.97) rotate(-0.8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* الفزعة عند العودة — قفزة + تدوير (الخطة ٤.٣) */
+.jw-state-wake {
+  animation-name: jw-wake;
+  animation-duration: 0.5s;
+  animation-iteration-count: 1;
+}
+
+@keyframes jw-wake {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  22% { transform: translateY(-4px) rotate(-3deg) scale(1.04); }
+  45% { transform: translateY(0) rotate(2deg) scale(0.98); }
+  68% { transform: translateY(-1.5px) rotate(-1deg) scale(1.01); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
+}
+
+/* ── عباءة النصر — ترفرف بحركة متأخرة عن الجسم (secondary motion) ──────── */
+.jw-cape {
+  animation: jw-cape-wave 0.7s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+
+@keyframes jw-cape-wave {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(7deg); }
+}
+
+/* ── شارة </> على الذراع — نابضة قليلاً (hover vibe) ────────────────────── */
+.jw-code-badge {
+  animation: jw-badge-pulse 2.2s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+@keyframes jw-badge-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.09); }
+}
+
+/* ── الستيكر — فقاعة السلانگ فوق الراس (Caveat, dir=ltr) ────────────────── */
+.jw-sticker {
+  position: absolute;
+  left: 4%;
+  bottom: 22%;
+  z-index: 2;
+  display: grid;
+  gap: 2px;
+  max-width: 210px;
+  padding: 6px 10px 7px;
+  border-radius: 14px 14px 14px 3px;
+  border: 1.5px solid var(--color-ink-700);
+  background:
+    repeating-linear-gradient(
+      -8deg,
+      transparent,
+      transparent 5px,
+      rgb(46 32 27 / 0.045) 5px,
+      rgb(46 32 27 / 0.045) 6px
+    ),
+    color-mix(in srgb, var(--color-kraft-50) 92%, white);
+  box-shadow:
+    2px 3px 0 rgb(46 32 27 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+  transform: rotate(-2deg);
+  animation: jw-sticker-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.18) both;
+  pointer-events: none; /* الستيكر ما يگعد يمنع اللمس */
+}
+
+@keyframes jw-sticker-pop {
+  0% { opacity: 0; transform: rotate(-6deg) scale(0.4) translateY(6px); }
+  60% { opacity: 1; transform: rotate(1.5deg) scale(1.08) translateY(-1px); }
+  100% { opacity: 1; transform: rotate(-2deg) scale(1) translateY(0); }
+}
+
+.jw-sticker-ar {
+  font-family: "Tajawal", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--color-ink-900);
+}
+
+/* سطر السلانگ — بخط Caveat (إنجليزي) واتجاه LTR مثل خطة ١.٥ */
+.jw-sticker-en {
+  direction: ltr;
+  text-align: left;
+  font-family: "Caveat", "Tajawal", cursive;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-ink-700);
+  background:
+    linear-gradient(
+      104deg,
+      transparent 1%,
+      color-mix(in srgb, var(--color-highlighter) 72%, transparent) 2.4%,
+      color-mix(in srgb, var(--color-highlighter) 50%, transparent) 10%,
+      color-mix(in srgb, var(--color-highlighter) 72%, transparent) 93%,
+      transparent 98%
+    );
+  padding: 0 4px 1px;
+  border-radius: 3px;
+}
+
+/* ── M3 — فقاعة تلميح بجنب الپين (التعلم مربوط بالمكان) ──────────────────── */
+.jw-hint-bubble {
+  position: absolute;
+  pointer-events: none;
+  max-width: 220px;
+  background: #fefae0;
+  border: 2px solid #5b8c5a;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-family: "Tajawal", "Caveat", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e201b;
+  box-shadow: 0 8px 20px rgb(46 32 27 / 0.18);
+  animation: jw-hint-pop 300ms cubic-bezier(0.2, 0.9, 0.3, 1.18) both;
+}
+.jw-hint-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: 28px;
+  width: 12px;
+  height: 12px;
+  background: #fefae0;
+  border-right: 2px solid #5b8c5a;
+  border-bottom: 2px solid #5b8c5a;
+  transform: rotate(45deg);
+}
+@keyframes jw-hint-pop {
+  0% { opacity: 0; transform: scale(0.4) translateY(8px); }
+  60% { opacity: 1; transform: scale(1.06) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.jw-hint-en {
+  display: block;
+  margin-top: 2px;
+  font-family: "Caveat", cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: #b4572e;
+  letter-spacing: 0.5px;
+}
+
+/* ── القصاصات — أوراق صغيرة ممزقة بخط يد جويسم ──────────────────────────── */
+.jw-scraps {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none; /* الحاوية شفافة — الأزرار هي اللي تلتقط اللمس */
+}
+
+.jw-scrap {
+  position: absolute;
+  pointer-events: auto; /* أزرار حقيقية — القاعدة الذهبية (60×44 لمسة) */
+  min-width: 64px;
+  min-height: 44px;
+  padding: 7px 9px;
+  border: 1.5px solid var(--color-ink-700);
+  border-radius: 2px 12px 2px 12px;
+  background-color: #fefae0;
+  background-image:
+    radial-gradient(circle at 82% 18%, rgb(107 87 67 / 0.16) 0 3.5px, transparent 4px),
+    repeating-linear-gradient(
+      -8deg,
+      transparent,
+      transparent 5px,
+      rgb(46 32 27 / 0.045) 5px,
+      rgb(46 32 27 / 0.045) 6px
+    );
+  box-shadow:
+    2px 3px 0 rgb(46 32 27 / 0.2),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+  font-family: "Caveat", "Tajawal", cursive;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
+  color: var(--color-ink-900);
+  cursor: pointer;
+  touch-action: manipulation;
+  transform: rotate(-2.5deg);
+  transition:
+    transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1.15),
+    box-shadow 140ms ease,
+    z-index 0s;
+  z-index: 1;
+}
+
+/* hover — تكبر وتنطّ من الدفتر (الخطة ٣) */
+.jw-scrap:hover,
+.jw-scrap:focus-visible {
+  transform: rotate(-1deg) scale(1.1) translateY(-2px);
+  box-shadow:
+    4px 6px 0 rgb(46 32 27 / 0.26),
+    inset 0 1px 0 rgb(255 255 255 / 0.95);
+  z-index: 4;
+}
+
+/* مفتوحة — تفتح نصها الكامل (الخطة ٣: الفخ) */
+.jw-scrap-open {
+  transform: rotate(-0.5deg) scale(1.28);
+  z-index: 5;
+  border-color: var(--color-wasabi-600);
+  max-width: min(200px, 72vw);
+  overflow-wrap: anywhere;
+  box-shadow:
+    5px 8px 0 rgb(46 32 27 / 0.28),
+    0 0 0 3px color-mix(in srgb, var(--color-highlighter) 45%, transparent);
+}
+
+/* ── جويسم على الخريطة — دودل ثابت بزاوية الخريطة (ما يمنع اللمس) ────────── */
+.jw-map-mascot {
+  position: absolute;
+  right: 1.5%;
+  bottom: 9%;
+  z-index: 5;
+  opacity: 0.9;
+  pointer-events: none; /* زينة فقط — الـ Overlay هو اللي يتفاعل */
+}
+
+.jw-scrap-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.jw-scrap-text {
+  display: block;
+  margin-top: 4px;
+  max-width: 190px;
+  font-family: "Tajawal", system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  text-align: right;
+  animation: jw-scrap-text-in 260ms ease-out both;
+}
+
+@keyframes jw-scrap-text-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── رسم النفس: دخول بخط خفي (stroke-dashoffset) ────────────────────────── */
+.jw-draw-in {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: jw-draw-in 500ms ease-out forwards;
+}
+
+@keyframes jw-draw-in {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── مسح النفس: ممحاة تمسحه من تحت لفوق + opacity تنزل للصفر (الخطة ٥.٥) ── */
+.jw-erase-out {
+  animation: jw-erase-out 400ms ease-in forwards;
+}
+
+@keyframes jw-erase-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  55% {
+    opacity: 0.55;
+    transform: translateY(-5px) rotate(1.2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) rotate(-1.6deg);
+  }
+}
+
+/* ── بخار الگدح — يرتفع ويختفي (موجود بالمكوّن، الحركة من هني) ──────────── */
+.jw-steam path {
+  transform-origin: center bottom;
+  animation: jw-steam 1.6s ease-in-out infinite;
+}
+
+.jw-steam-1 { animation-delay: 0s; }
+.jw-steam-2 { animation-delay: 0.35s; }
+.jw-steam-3 { animation-delay: 0.7s; }
+
+@keyframes jw-steam {
+  0% { opacity: 0; transform: translateY(2.5px) scaleY(0.55); }
+  35% { opacity: 0.85; }
+  70% { opacity: 0.35; }
+  100% { opacity: 0; transform: translateY(-5px) scaleY(1); }
+}
+
+/* شخير — حرف Z يطلع ويختفي (الخطة ٥.٧) */
+.jw-snore-z {
+  transform-origin: center;
+  opacity: 0;
+  animation: jw-snore-z 1.2s ease-out infinite;
+}
+
+.jw-snore-z2 { animation-delay: 0.4s; }
+.jw-snore-z3 { animation-delay: 0.8s; }
+
+@keyframes jw-snore-z {
+  0% { opacity: 0; transform: translate(0, 6px) scale(0.5) rotate(6deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(4px, -9px) scale(1.15) rotate(-4deg); }
+}
+
+/* ── تقليل الحركة: نوقف كل حركة جويسم — يگعد ثابت مثل رسمة دفتر ─────────── */
+@media (prefers-reduced-motion: reduce) {
+  .jw-state-idle,
+  .jw-state-bored,
+  .jw-state-sleeping,
+  .jw-state-wake,
+  .jw-state-loading,
+  .jw-state-error,
+  .jw-state-victory,
+  .jw-state-click,
+  .jw-state-walk,
+  .jw-state-jump,
+  .jw-state-land,
+  .jw-steam path,
+  .jw-snore-z,
+  .jw-scrap,
+  .jw-scrap-open,
+  .jw-sticker,
+  .jw-cape,
+  .jw-code-badge,
+  .jw-draw-in,
+  .jw-erase-out {
+    animation: none !important;
+    transition: none !important;
+  }
+  .jw-mascot-wrap,
+  .jw-scrap:hover,
+  .jw-scrap:focus-visible,
+  .jw-scrap-open {
+    transform: none !important;
+  }
+  .jw-map-mascot {
+    display: none; /* زينة الخريطة تختفي — لا حركة ولا إلهاء */
+  }
 }

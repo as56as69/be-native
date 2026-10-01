@@ -54,6 +54,15 @@ const seededProviders = [
     cost_per_token: 0,
     created_at: new Date().toISOString(),
   },
+  {
+    id: "00000000-0000-4000-8000-0000000000c5",
+    name: "gemini",
+    api_key_encrypted: "MOCK-GEMINI",
+    is_active: true,
+    priority: 5,
+    cost_per_token: 0,
+    created_at: new Date().toISOString(),
+  },
 ];
 
 // Five living districts of Baghdad, each with a multi-NPC dialogue graph,

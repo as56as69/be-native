@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ScenarioCollectibleSeed, ScenarioGraph, ScenarioNode, ScenarioOption } from "@be-native/shared";
 
+import { jweysimBus } from "../core/jweysimBus";
 import { useCollectibles } from "../hooks/useCollectibles";
 import { api, ApiError } from "../lib/api";
 import { useGame } from "../state/GameContext";
@@ -70,6 +71,8 @@ export function ScenarioViewer() {
           if (!cancelled) {
             setStatus("error");
             setErrorText("ماكو سيناريو جاهز لهذه النقطة بعد — شيّك عليها المس فلّيت.");
+            /* جويسم يسمع: السيناريو فشل — حالة خطأ */
+            jweysimBus.interaction("scenario-error", spotId);
           }
           return;
         }
@@ -88,6 +91,8 @@ export function ScenarioViewer() {
             ? "ماكو سيناريو مولّد لهذه النقطة بعد — نرجع الخريطة ونبلّش غيرها."
             : "انقطع الاتصال بخادم بغداد — تحقق من شبكتك ورابع."
         );
+        /* جويسم يسمع: خطأ شبكة/خادم — حالة خطأ */
+        jweysimBus.interaction("scenario-error", spotId);
       });
     return () => {
       cancelled = true;
@@ -204,8 +209,10 @@ export function ScenarioViewer() {
     } else {
       setComplete(true);
       setFeedback(null);
+      /* جويسم يسمع: السيناريو انكمل — حفلة نصر كاملة 🎉 */
+      jweysimBus.interaction("scenario-complete", spotId);
     }
-  }, [feedback, graph]);
+  }, [feedback, graph, spotId]);
 
   const retry = useCallback(() => {
     setFeedback(null);

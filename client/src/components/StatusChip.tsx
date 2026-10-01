@@ -10,13 +10,15 @@ const TONES: Record<string, string> = {
 export function StatusChip({
   tone = "idle",
   children,
+  className = "",
 }: {
   tone?: "ok" | "warn" | "bad" | "idle";
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <span
-      className={`stamp uppercase ${TONES[tone]} inline-flex items-center gap-1.5`}
+      className={`stamp uppercase ${TONES[tone]} inline-flex items-center gap-1.5 ${className}`}
       role="status"
     >
       <span aria-hidden className="inline-block size-1.5 rounded-full bg-current" />

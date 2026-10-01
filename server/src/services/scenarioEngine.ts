@@ -47,6 +47,22 @@ export function scenarioToPayload(scenario: Scenario): ScenarioPayload | null {
   return null;
 }
 
+/**
+ * Merge a generated/manual ScenarioPayload into a scenario's graph_rules
+ * as `prebaked`. The engine then serves this exact payload immediately
+ * (source: "synthesis") without calling the LLM — a fixed, replayable spot.
+ */
+export function withPrebaked(
+  scenario: Scenario,
+  payload: ScenarioPayload
+): Scenario {
+  const rules = (scenario.graph_rules ?? {}) as Record<string, unknown>;
+  return {
+    ...scenario,
+    graph_rules: { ...rules, prebaked: payload } as never,
+  };
+}
+
 /** Build the user-facing prompt from a known (spot, scenario) pair. */
 export function buildScenarioPrompt(spot: Spot, scenario: Scenario): string {
   const rules = scenario.graph_rules as { nodes?: Array<{ label_ar?: string }> } | null;

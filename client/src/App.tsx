@@ -14,16 +14,19 @@ import { ScenarioViewer } from "./components/ScenarioViewer";
 import { TraceDrawer } from "./components/TraceDrawer";
 import { VibeMapperEngine } from "./components/VibeMapperEngine";
 import { VoucherModal } from "./components/VoucherModal";
+import GSlangSheet from "./components/GSlangSheet";
+import JweysimOverlay from "./components/JweysimOverlay";
 import { UI_GENZ_COPY } from "./data/seedData";
 import { useCollectibles } from "./hooks/useCollectibles";
 import { useVibeMapper } from "./hooks/useVibeMapper";
 
 function MapScreen() {
-  const { user, spots, openSpot, openVoucher, apiConnected } = useGame();
+  const { user, spots, openSpot, openVoucher, apiConnected, activeSpot, voucherOpen } = useGame();
   const { addAdminItem, items, getUnlockedItems } = useCollectibles();
   const { entries: vibeEntries, generateVibe, saveToTraces } = useVibeMapper(addAdminItem);
   const [tracesOpen, setTracesOpen] = useState(false);
   const [isVibeMapperOpen, setIsVibeMapperOpen] = useState(false);
+  const [isGSlangOpen, setIsGSlangOpen] = useState(false);
   const { canInstall, install } = useInstallPrompt();
   const { offlineReady } = useServiceWorker();
 
@@ -41,9 +44,9 @@ function MapScreen() {
   return (
     <main className="notebook-paper relative flex h-dvh flex-col overflow-hidden">
       {/* sticky status header */}
-      <header className="sticky top-0 z-20 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line-300/60 bg-kraft-100/90 px-4 py-2 backdrop-blur-sm">
+      <header className="notebook-header sticky top-0 z-20 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line-300/60 bg-kraft-100/90 px-4 py-2 backdrop-blur-sm">
         {/* title — breathes in the empty middle */}
-        <span className="font-display text-xl text-ink-700">بغداد</span>
+        <span className="header-title font-display text-xl text-ink-700">بغداد</span>
 
         {/* left cluster (RTL start): connection + balance indicators */}
         <span className="mx-0.5 h-4 w-px bg-line-300" aria-hidden />
@@ -52,7 +55,7 @@ function MapScreen() {
           <StatusChip tone={apiConnected ? "ok" : "warn"}>
             {apiConnected ? "خادم جاهز" : "بلا رصيد"}
           </StatusChip>
-          {offlineReady && <StatusChip tone="ok">نُسخ يدك</StatusChip>}
+          {offlineReady && <StatusChip tone="ok" className="hide-360">نُسخ يدك</StatusChip>}
           <span className="inline-flex items-center gap-1.5 text-sm text-ink-500">
             <span className="font-display inline-flex items-center gap-1.5 text-wasabi-600">
               <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -98,6 +101,21 @@ function MapScreen() {
             {UI_GENZ_COPY.dictionary}
           </span>
         </button>
+        {/* جي سلانك — تعال اترجملك سلانك: يحول الكلام الرسمي الإنجليزي لسلانك جويسم */}
+        <button
+          type="button"
+          onClick={() => setIsGSlangOpen(true)}
+          className="fab-doodle text-sm"
+          aria-label="جي سلانك: ترجمة الكلام الرسمي لسلانك جويسم"
+        >
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 7h12M4 12h9M9 17h7" />
+            <path d="M17 9l3-4 3 4M20 5v6" />
+          </svg>
+          <span dir="ltr" className="inline-block">
+            جي سلانك
+          </span>
+        </button>
         {/* install prompt (fires when the browser is ready) */}
         {canInstall && (
           <button
@@ -131,7 +149,7 @@ function MapScreen() {
         {/* admin link */}
         <a
           href="/admin"
-          className="fab-doodle size-8"
+          className="fab-doodle hide-360 size-8"
           aria-label="غرفة عمليات النظام"
           title="Admin Dashboard"
         >
@@ -154,6 +172,14 @@ function MapScreen() {
         unlockedItems={getUnlockedItems()}
         total={items.length}
       />
+
+      {/* جويسم — طبقة علوية شفافة للمس. يظهر فقط على الخريطة وفقط
+          عندما لا تكون أي نافذة مفتوحة: التكسي/النقطة (activeSpot)،
+          الشحن (voucherOpen)، الفايب (isVibeMapperOpen)، أو الدفتر
+          (tracesOpen) — حتى لا تبقى القصاصات فوق أي نافذة منبثقة. */}
+      {!activeSpot && !tracesOpen && !isVibeMapperOpen && !voucherOpen && (
+        <JweysimOverlay visible size={104} />
+      )}
 
       {/* cultural vibe mapper — paper overlay with the generation engine */}
       {isVibeMapperOpen && (
@@ -195,6 +221,44 @@ function MapScreen() {
                 saveToTraces={saveToTraces}
                 entries={vibeEntries}
               />
+            </div>
+          </div>
+        </>
+      )}
+      {/* جي سلانك — ورقة صغيرة يحول فيها المستخدم الرسمي الإنجليزي لسلانك جويسم */}
+      {isGSlangOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setIsGSlangOpen(false)}
+            aria-hidden
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="جي سلانك"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-card-in"
+          >
+            <div className="relative max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-sm border-2 border-[#8B5A2B] bg-[#F5EFE6] p-5 shadow-2xl">
+              <header className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-2xl font-bold leading-tight text-amber-950">
+                    تعال اترجملك سلانك
+                  </h2>
+                  <p className="font-arabic mt-0.5 text-xs text-amber-900/70">
+                    جي سلانك — من الكلام الرسمي إلى سلانك جويسم الأمريكي.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsGSlangOpen(false)}
+                  aria-label="إغلاق"
+                  className="grid size-8 shrink-0 place-items-center rounded-full border border-[#8B5A2B]/40 bg-[#FFFDF7] text-sm text-amber-950 transition-colors hover:bg-[#F5E7CE]"
+                >
+                  ✕
+                </button>
+              </header>
+              <GSlangSheet />
             </div>
           </div>
         </>

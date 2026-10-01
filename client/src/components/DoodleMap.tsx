@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import type { Spot, SpotCategory } from "@be-native/shared";
 
+import { jweysimBus } from "../core/jweysimBus";
 import { MAP_CHARGER_TEXTS } from "../data/seedData";
 
 /** Board caption label — sourced from the seed map-charger texts. */
@@ -294,7 +295,7 @@ function toPercent(v: number): string {
 /** Fixed layout placement (percent of the map canvas) so the seeded spots never crowd.
  *  Coordinates are geographic: Karkh on the west bank (left), Rasafa east (right).
  *  River channel rule: keep the 38%–62% middle band empty (no pin/card/label). */
-const PIN_POS: Record<string, { x: number; y: number }> = {
+export const PIN_POS: Record<string, { x: number; y: number }> = {
   "Al-Mansour Street Cafe": { x: 18, y: 18 },
   "Karrada Street Tea Vendor": { x: 78, y: 44 },
   "Ziyouna Gym": { x: 76, y: 63 },
@@ -666,6 +667,8 @@ export function DoodleMap({
   const currentSpot = unlocked[unlocked.length - 1] ?? null;
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [measuredPins, setMeasuredPins] = useState<Record<string, [number, number]>>({});
+  /* لمسة أخيرة على خريطة — جويسم يركض وراء الپين (bus event يسمعه الـ Overlay). */
+  const lastPokeRef = useRef(0);
   useEffect(() => {
     const container = mapRef.current;
     if (!container) return;
@@ -715,7 +718,19 @@ export function DoodleMap({
             type="button"
             key={spot.id}
             disabled={disabled}
-            onClick={() => onSpotClick(spot)}
+            onClick={() => {
+              /* جويسم يسمع إن پين انفتح — يركض وراه (jweysim:spot-open). */
+              jweysimBus.emit("jweysim:interaction", {
+                kind: "tap",
+                targetId: spot.id,
+                timestamp: Date.now(),
+              });
+              const now = Date.now();
+              if (now - lastPokeRef.current > 350) {
+                lastPokeRef.current = now;
+                onSpotClick(spot);
+              }
+            }}
             style={{ left, top }}
             className={`absolute z-10 -translate-x-1/2 outline-none ${
               lockedSpot ? "cursor-not-allowed" : "cursor-pointer"
@@ -769,6 +784,8 @@ export function DoodleMap({
           {BOARD_LABEL} · {unlocked.length} مفتوح {locked.length ? `· ${locked.length} على الطريق` : ""}
         </span>
       </figcaption>
+
+    {/* جويسم على الخريطة — يظهر مرة وحدة عبر الـ Overlay (App.tsx) — لا نرسمه هنا */}
     </div>
   );
 }
