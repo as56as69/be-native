@@ -21,9 +21,11 @@ import {
 import { loadSettings, updateSettings } from "../core/config.js";
 import { getDb } from "../db.js";
 import { generateScenarioPayloadFor } from "../services/scenarioEngine.js";
+import { computeEntitlement } from "../services/entitlement.js";
 import { requireAdmin } from "../middleware/adminAuth.js";
 import type { JweysimScrap, JweysimScrapInput } from "@be-native/shared";
 import type { JweysimPhrase, JweysimPhraseInput } from "@be-native/shared";
+import type { User } from "@be-native/shared";
 
 function makeCode(prefix: string, length: number): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
@@ -588,6 +590,109 @@ export function createAdminRouter(): Router {
     }
   });
 
+  // ── institutes (الشركاء: معاهد/مدرسون/مؤثرون) ────────────────────
+  router.get("/institutes", async (_req, res, next) => {
+    try {
+      const { data, error } = await db
+        .from("institutes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/institutes", async (req, res, next) => {
+    try {
+      const name = typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 120) : "";
+      if (!name) {
+        res.status(422).json({ error: "institute name is required" });
+        return;
+      }
+      const { data, error } = await db
+        .from("institutes")
+        .insert({
+          name,
+          contact: typeof req.body?.contact === "string" ? req.body.contact.trim().slice(0, 200) : null,
+          share_per_code: Math.max(0, Math.round(Number(req.body?.share_per_code) || 0)),
+          is_active: req.body?.is_active !== false,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ── activation codes (أكواد التفعيل بأسماء المعاهد) ──────────────
+  router.get("/activation-codes", async (_req, res, next) => {
+    try {
+      const { data: codes, error } = await db
+        .from("activation_codes")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+
+      // join institute names for the admin view
+      const { data: institutes } = await db.from("institutes").select("id, name");
+      const nameById = new Map((institutes ?? []).map((r: any) => [String(r.id), r.name]));
+      const rows = (codes ?? []).map((c: any) => ({
+        ...c,
+        institute_name: c.institute_id ? (nameById.get(String(c.institute_id)) ?? null) : null,
+      }));
+
+      res.json(rows);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/activation-codes/batch", async (req, res, next) => {
+    try {
+      const institute_id = typeof req.body?.institute_id === "string" ? req.body.institute_id.trim() : "";
+      if (!institute_id) {
+        res.status(422).json({ error: "institute_id is required (no code without a named institute)" });
+        return;
+      }
+
+      // verify the institute exists
+      const { data: institute } = await db.from("institutes").select("id").eq("id", institute_id).maybeSingle();
+      if (!institute) {
+        res.status(404).json({ error: "INSTITUTE_NOT_FOUND" });
+        return;
+      }
+
+      const count = Math.min(500, Math.max(1, Math.round(Number(req.body?.count) || 1)));
+      const tier = req.body?.tier === "professional" ? "professional" : "standard";
+      const duration_days = Math.min(365, Math.max(1, Math.round(Number(req.body?.duration_days) || 60)));
+
+      const seen = new Set<string>();
+      const rows: Array<{ code: string; tier: string; duration_days: number; institute_id: string; is_redeemed: boolean }> = [];
+      while (rows.length < count) {
+        const code = makeCode("ACT-", 10);
+        if (seen.has(code)) continue;
+        seen.add(code);
+        rows.push({ code, tier, duration_days, institute_id, is_redeemed: false });
+      }
+
+      const { data, error } = await db
+        .from("activation_codes")
+        .insert(rows as never)
+        .select("*");
+      if (error) {
+        res.status(409).json({ error: `ACTIVATION_BATCH_FAILED: ${error.message}` });
+        return;
+      }
+      res.status(201).json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // ── opening quotes (dynamic opening-story management) ─────────────
   router.get("/quotes", async (_req, res, next) => {
     try {
@@ -670,7 +775,7 @@ export function createAdminRouter(): Router {
     try {
       const { data: users, error: userErr } = await db
         .from("users")
-        .select("id, phone, auth_id, credits_balance, current_tier, created_at")
+        .select("id, phone, auth_id, name, credits_balance, current_tier, trial_started_at, trial_ends_at, tier_expires_at, trial_used, created_at")
         .order("created_at", { ascending: false });
       if (userErr) throw userErr;
 
@@ -679,9 +784,28 @@ export function createAdminRouter(): Router {
         .select("id", { count: "exact", head: true });
       if (spotErr) throw spotErr;
 
+      // Phase 4 — compute the CURRENT entitlement snapshot for every user so
+      // the admin table shows "ينتهي في" + a renewal alert before expiry.
+      const now = new Date();
+      const enriched = (users ?? []).map((raw) => {
+        const u = raw as unknown as User;
+        const e = computeEntitlement(u, now);
+        return {
+          ...u,
+          entitlement: {
+            status: e.status,
+            tier: e.tier,
+            trial_days_left: e.trial_days_left,
+            tier_days_left: e.tier_days_left,
+            requires_activation: e.requires_activation,
+            paid_features: e.paid_features,
+          },
+        };
+      });
+
       res.json({
         open_spots_global: openSpotsGlobal ?? 0,
-        users: users ?? [],
+        users: enriched,
       });
     } catch (err) {
       next(err);

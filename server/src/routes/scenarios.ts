@@ -6,11 +6,14 @@ import type {
   ScenarioGraph,
   ScenarioNode,
   ScenarioOption,
+  User,
 } from "@be-native/shared";
 import { scenarioGraphDraftForSpot } from "@be-native/shared";
 
 import { getDb } from "../db.js";
 import { callLLMWithFallback } from "../services/providerService.js";
+import { computeEntitlement } from "../services/entitlement.js";
+import { isUserCollectionBlocked } from "../services/collection.js";
 
 /** Gemini (free tier) يحتاج وقتاً أطول بسبب مداراة الكوتا — لكن مع الـ fallback الآمن. */
 const EVALUATE_TIMEOUT_MS = 60_000;
@@ -161,6 +164,27 @@ export function createScenariosRouter(): Router {
   // Active graph for a spot (used by the viewer right after transit unlock).
   router.get("/spot/:spotId", async (req, res, next) => {
     try {
+      // Phase 3 — expired accounts cannot load paid scenario content; only
+      // the activation wall (or voucher recharge) re-opens it.
+      const authUser = String(req.query.user_id ?? "");
+      if (authUser) {
+        const { data: userRow } = await db
+          .from("users")
+          .select("id, current_tier, trial_started_at, trial_ends_at, tier_expires_at, trial_used, credits_balance")
+          .eq("id", authUser)
+          .maybeSingle();
+        if (userRow) {
+          const entitle = computeEntitlement(userRow as unknown as User);
+          // Phase 5 — المعهد متأخر عن الدفع 24h → حتى المحتوى المباشر يُحجز
+          // بجانب سقف الحساب العادي، حتّى يُحصَّل من الناحية الإدارية.
+          const collectionBlocked = await isUserCollectionBlocked(authUser);
+          if (entitle.requires_activation || collectionBlocked) {
+            res.status(403).json({ error: "TRIAL_EXPIRED", requires_activation: true });
+            return;
+          }
+        }
+      }
+
       const { data, error } = await db
         .from("scenario_graphs")
         .select("*")
@@ -282,6 +306,22 @@ export function createScenariosRouter(): Router {
         res.status(422).json({ error: "user_id and a positive amount are required" });
         return;
       }
+
+      // Phase 3 — free trial users play FIXED content without burning energy:
+      // the scenario viewer still calls consume, but the server forgives it.
+      const { data: userRow } = await db
+        .from("users")
+        .select("id, current_tier, trial_started_at, trial_ends_at, tier_expires_at, trial_used, credits_balance")
+        .eq("id", String(b.user_id))
+        .maybeSingle();
+      if (userRow) {
+        const entitle = computeEntitlement(userRow as unknown as User);
+        if (entitle.free_fixed_content) {
+          res.json({ user_id: String(b.user_id), amount, balance: Number((userRow as unknown as User).credits_balance) });
+          return;
+        }
+      }
+
       const { data, error } = await db.rpc("spend_credits", {
         p_user_id: String(b.user_id),
         p_amount: amount,

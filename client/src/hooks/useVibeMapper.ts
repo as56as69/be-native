@@ -12,6 +12,7 @@ import {
 } from "@be-native/shared";
 
 import { DEFAULT_VIBE_ENTRIES } from "../data/seedData";
+import { api } from "../lib/api";
 
 /**
  * "Vibe Mapper / قاموس القوالب الحسية" — local-first cultural dictionary.
@@ -349,25 +350,72 @@ export function useVibeMapper(addAdminItem?: (input: AdminCollectibleInput) => C
       });
       await sleep(420);
 
-      // Step 3 — صياغة Gen Z: synthesize slang, aura impact & street example.
-      onStage?.({
-        stage: "SYNTHESIS",
-        outputs: existing
-          ? {
-              genZSlang: existing.genZSlang,
-              auraImpact: existing.auraImpact,
-              usageExample: existing.usageExample,
-            }
-          : {
-              genZSlang: tmpl.skeleton.genZSlang,
-              auraImpact: tmpl.skeleton.auraImpact,
-              usageExample: tmpl.skeleton.usageExample,
-            },
-      });
-      await sleep(420);
-
       // Existing dictionary entry (admin or prior AI) wins — no duplicate persist.
       if (existing) return existing;
+
+      // Try live LLM via the vibe route (same provider switchboard as جي سلانك).
+      // If the provider is unavailable, fall back to the local template fill.
+      let generated: VibeMapEntry | null = null;
+      try {
+        const r = await api.generateVibe({ phrase: clean, template: tmpl.label });
+        generated = {
+          id: makeId(),
+          baghdadiPhrase: clean,
+          source: "AI_GENERATED",
+          createdAt: new Date().toISOString(),
+          contextTag: r.contextTag || tmpl.contextTag,
+          literalMeaning: r.literalMeaning,
+          culturalVibe: r.culturalVibe,
+          genZSlang: r.genZSlang,
+          usageExample: r.usageExample,
+          auraImpact: r.auraImpact,
+          category: (["MASTERY", "BANTER", "DRAMA", "AURA", "RESPECT", "CONFLICT"] as const).includes(
+            r.category.toUpperCase() as VibeCategory
+          )
+            ? (r.category.toUpperCase() as VibeCategory)
+            : tmpl.category,
+        };
+      } catch {
+        // Provider down — use the template skeleton as the offline fallback.
+        generated = null;
+      }
+
+      if (generated) {
+        onStage?.({
+          stage: "SYNTHESIS",
+          outputs: {
+            genZSlang: generated.genZSlang,
+            auraImpact: generated.auraImpact,
+            usageExample: generated.usageExample,
+          },
+        });
+        await sleep(420);
+        persistEntry(
+          {
+            baghdadiPhrase: clean,
+            contextTag: generated.contextTag,
+            literalMeaning: generated.literalMeaning,
+            culturalVibe: generated.culturalVibe,
+            genZSlang: generated.genZSlang,
+            usageExample: generated.usageExample,
+            auraImpact: generated.auraImpact,
+            category: generated.category,
+          },
+          "AI_GENERATED"
+        );
+        return generated;
+      }
+
+      // Step 3 — صياغة Gen Z (offline fallback): synthesize slang from template.
+      onStage?.({
+        stage: "SYNTHESIS",
+        outputs: {
+          genZSlang: tmpl.skeleton.genZSlang,
+          auraImpact: tmpl.skeleton.auraImpact,
+          usageExample: tmpl.skeleton.usageExample,
+        },
+      });
+      await sleep(420);
 
       return addAIEntry({
         baghdadiPhrase: clean,

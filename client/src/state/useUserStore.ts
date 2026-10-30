@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../lib/api";
-import { GUEST_USER_ID } from "./GameContext";
 
 // ── minimal module-level store (no external state lib) ─────────────────
 // XP is session/persisted progress; energy mirrors the server credits
@@ -67,7 +66,8 @@ export const userStore = {
     state = { ...state, energy: optimistic };
     emit();
     try {
-      const result = await api.consumeEnergy(GUEST_USER_ID, amount);
+      const stored = window.localStorage.getItem("benative.user.id") ?? "";
+      const result = await api.consumeEnergy(stored, amount);
       state = { ...state, energy: result.balance };
       emit();
       return result.balance;

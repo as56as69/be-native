@@ -4,6 +4,7 @@ import type {
   ScenarioPayloadResult,
   TransitLockedResponse,
   TransitStartInput,
+  User,
 } from "@be-native/shared";
 
 import { TransitGate } from "../core/throttle.js";
@@ -16,6 +17,8 @@ import {
 } from "../core/config.js";
 import { getDb } from "../db.js";
 import { generateScenarioPayload } from "../services/scenarioEngine.js";
+import { computeEntitlement } from "../services/entitlement.js";
+import { isUserCollectionBlocked } from "../services/collection.js";
 
 const FAST_CREDIT_COST = getFastTransitCost();
 const TRANSIT_CREDIT_COST = getTransitCost();
@@ -38,6 +41,29 @@ export function createTransitRouter(deps: TransitDeps = {}): Router {
 
       const mode = input.mode === "fast" ? "fast" : input.mode === "transit" ? "transit" : "slow";
       const db = getDb();
+
+      // Phase 3 gate — the entitlement wall: expired trial / expired tier
+      // cannot ride the paid taxis (fast/transit). Walking (slow) stays open.
+      const { data: userRow } = await db
+        .from("users")
+        .select("id, current_tier, trial_started_at, trial_ends_at, tier_expires_at, trial_used, credits_balance")
+        .eq("id", String(input.user_id))
+        .maybeSingle();
+      const entitle = userRow ? computeEntitlement(userRow as unknown as User) : null;
+      const collectionBlocked = userRow
+        ? await isUserCollectionBlocked(String(input.user_id))
+        : false;
+      if (entitle && (entitle.requires_activation || collectionBlocked) && mode !== "slow") {
+        res.status(403).json({ error: "TRIAL_EXPIRED", requires_activation: true });
+        return;
+      }
+      if (entitle && !entitle.requires_activation && entitle.free_fixed_content && mode !== "slow") {
+        // Trial user (free): paid taxis stay locked until they activate — but
+        // the map is still browsable and fixed scenarios are playable on foot.
+        res.status(403).json({ error: "TRIAL_LOCKED_PAID", requires_activation: false });
+        return;
+      }
+
       const fastCost = getFastTransitCost();
       const transitCost = getTransitCost();
 

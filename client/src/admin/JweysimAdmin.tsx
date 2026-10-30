@@ -4,6 +4,7 @@ import type { JweysimPhrase, JweysimPhraseInput, JweysimScrap, JweysimScrapInput
 
 import { api } from "../lib/api";
 import { Badge, Btn, Empty, Field, NumberInput, Panel, TextInput, Toggle } from "./AdminUI";
+import { PIN_POS } from "../components/DoodleMap";
 
 /** شكل مسودة القصاصة في النموذج — يطابق JweysimScrapInput. */
 type ScrapDraft = JweysimScrapInput;
@@ -203,6 +204,27 @@ function PhraseEditor({
       </p>
     </Panel>
   );
+}
+
+const SPOT_UUID_TO_TITLE: Record<string, string> = {
+  "00000000-0000-4000-8000-000000000001": "Al-Mansour Street Cafe",
+  "00000000-0000-4000-8000-000000000002": "Karrada Street Tea Vendor",
+  "00000000-0000-4000-8000-000000000003": "Ziyouna Gym",
+  "00000000-0000-4000-8000-000000000004": "Baghdad Taxi Ride",
+  "00000000-0000-4000-8000-000000000005": "Mutanabbi Bookshop",
+  "00000000-0000-4000-8000-000000000006": "Al-Sayed Restaurant",
+  "00000000-0000-4000-8000-000000000007": "Baghdad Teaching Hospital",
+  "00000000-0000-4000-8000-000000000008": "Abu Jassem's Kiosk",
+};
+
+/** يرجع إحداثيات القصاصة المربوطة بپين (من مواضع الپين الثابتة PIN_POS)
+ *  — نفس منطق JweysimOverlay. عند غياب پين معروف يرجع 50/50. */
+function scrapPinPos(spotId: string | null): { x: number; y: number } {
+  if (!spotId) return { x: 50, y: 50 };
+  const title = SPOT_UUID_TO_TITLE[spotId];
+  const fixed = title ? PIN_POS[title] : undefined;
+  if (fixed) return { x: fixed.x, y: fixed.y };
+  return { x: 50, y: 50 };
 }
 
 export function JweysimAdmin() {
@@ -419,7 +441,20 @@ export function JweysimAdmin() {
                 <Field label="مكان القصاصة">
                   <select
                     value={draft.location_type}
-                    onChange={(e) => patch("location_type", e.target.value as JweysimScrap["location_type"])}
+                    onChange={(e) => {
+                      const next = e.target.value as JweysimScrap["location_type"];
+                      setDraft((d) => {
+                        if (!d) return d;
+                        // التحويل من پين → حر: انقل موضع الپين الحالي إلى
+                        // الإحداثيات الحرة حتى يتحكم بها المستخدم فوراً
+                        const base = { ...d, location_type: next };
+                        if (next === "free" && d.location_type === "pin" && d.spot_id) {
+                          const p = scrapPinPos(d.spot_id);
+                          return { ...base, pos_x: p.x, pos_y: p.y };
+                        }
+                        return base;
+                      });
+                    }}
                     className="w-full rounded-md border border-slatew-700 bg-slatew-950/70 px-3 py-2 text-sm text-slatew-100 outline-none focus:border-kraft-400"
                   >
                     <option value="pin">مربوط بپين موقع</option>

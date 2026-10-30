@@ -25,8 +25,13 @@ create table if not exists public.users (
   id              uuid primary key default gen_random_uuid(),
   phone           text unique,
   auth_id         text unique,
+  name            text,
   credits_balance integer not null default 0 check (credits_balance >= 0),
   current_tier    user_tier not null default 'free',
+  trial_started_at timestamptz,
+  trial_ends_at    timestamptz,
+  tier_expires_at  timestamptz,
+  trial_used       boolean not null default false,
   created_at      timestamptz not null default now(),
   constraint users_has_identifier check (phone is not null or auth_id is not null)
 );
@@ -75,6 +80,38 @@ create table if not exists public.vouchers (
 );
 
 create index if not exists vouchers_code_idx on public.vouchers (code);
+
+-- ------------------------------------------------------------ institutes
+-- شركاء التوزيع (معاهد / مدرّسون / مؤثّرون) — كل كود تفعيل يرتبط بهم
+-- لسجل تحصيل: منو باع، لمن، ومتى نحصّل.
+create table if not exists public.institutes (
+  id                uuid primary key default gen_random_uuid(),
+  name              text not null,
+  contact           text,
+  share_per_code    integer not null default 0,   -- حصة الشريك بالدينار لكل كود
+  is_active         boolean not null default true,
+  created_at        timestamptz not null default now()
+);
+
+-- -------------------------------------------------------- activation_codes
+-- أكواد التفعيل «أبو الكود» — تفعّل الحساب الدائمي (tier + مدة) وترتبط بمعهد.
+create table if not exists public.activation_codes (
+  id                  uuid primary key default gen_random_uuid(),
+  code                text not null unique,
+  tier                user_tier not null default 'standard',
+  duration_days       integer not null default 60,
+  institute_id        uuid references public.institutes (id) on delete set null,
+  is_redeemed         boolean not null default false,
+  redeemed_by_user_id uuid references public.users (id) on delete set null,
+  redeemed_at         timestamptz,
+  -- Phase 5 — تحصيل: هل المبلغ وصل من المعهد (الدفع خارج التطبيق)؟
+  is_settled          boolean not null default false,
+  settled_at          timestamptz,
+  created_at          timestamptz not null default now()
+);
+
+create index if not exists activation_codes_code_idx on public.activation_codes (code);
+create index if not exists activation_codes_institute_idx on public.activation_codes (institute_id);
 
 -- ------------------------------------------------------------ api_providers
 -- Dynamic Provider Switcher — LLM/TTS providers with priority & cost.
@@ -135,6 +172,8 @@ alter table public.users          enable row level security;
 alter table public.spots          enable row level security;
 alter table public.scenarios      enable row level security;
 alter table public.vouchers       enable row level security;
+alter table public.institutes     enable row level security;
+alter table public.activation_codes enable row level security;
 alter table public.api_providers  enable row level security;
 alter table public.settings       enable row level security;
 alter table public.jweysim_scraps enable row level security;

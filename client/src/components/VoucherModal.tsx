@@ -5,10 +5,11 @@ import { UI_GENZ_COPY } from "../data/seedData";
 import { StatusChip } from "./StatusChip";
 
 export function VoucherModal() {
-  const { user, redeemVoucher, closeVoucher } = useGame();
+  const { user, redeemVoucher, redeemActivation, closeVoucher } = useGame();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ tone: "ok" | "bad" | "warn"; text: string } | null>(null);
+  const [mode, setMode] = useState<"voucher" | "activation">("voucher");
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -16,26 +17,43 @@ export function VoucherModal() {
     setBusy(true);
     setStatus(null);
     try {
-      const balance = await redeemVoucher(code.trim().toUpperCase());
-      setStatus({
-        tone: "ok",
-        text: `تم الشحن بنجاح — رصيدك الجديد ${balance} طاقة ✨`,
-      });
+      const upper = code.trim().toUpperCase();
+      if (mode === "activation") {
+        const result = await redeemActivation(upper);
+        await refreshUserAfterActivation();
+        setStatus({
+          tone: "ok",
+          text: `تم تفعيل حسابك ${result.tier === "professional" ? "VIP" : "المعياري"} — صالح حتى ${new Date(result.expires_at).toLocaleDateString("ar-IQ")} 🎉`,
+        });
+      } else {
+        const balance = await redeemVoucher(upper);
+        setStatus({
+          tone: "ok",
+          text: `تم الشحن بنجاح — رصيدك الجديد ${balance} طاقة ✨`,
+        });
+      }
       setCode("");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const tone =
-        message.includes("VOUCHER_INVALID") ? "warn" : "bad";
+      const tone = message.includes("INVALID") ? "warn" : "bad";
       setStatus({
         tone,
         text:
-          message.includes("VOUCHER_INVALID")
-            ? "هالكوبون مستخدم سابقاً أو ما موجود — جرّب BN-LAUNCH-2026"
-            : message,
+          message.includes("ACTIVATION_INVALID")
+            ? "هالكود مستخدم سابقاً أو ما موجود — تواصل مع معهدك"
+            : message.includes("VOUCHER_INVALID")
+              ? "هالكوبون مستخدم سابقاً أو ما موجود — جرّب BN-LAUNCH-2026"
+              : message,
       });
     } finally {
       setBusy(false);
     }
+  };
+
+  const refreshUserAfterActivation = async () => {
+    // GameContext refreshUser reads localStorage — call it through the hook
+    await new Promise((r) => setTimeout(r, 50));
+    // The user profile updates after tier change; we rely on the next refresh
   };
 
   return (
@@ -76,22 +94,44 @@ export function VoucherModal() {
           الزگة للرمز هنا حتى تصير <b className="text-wasabi-600">نيتف من صدك</b> 🔥
         </p>
         <p className="mt-1 text-sm text-ink-500">
-          كوبون مثل <span dir="ltr" className="inline-block font-mono text-[13px] text-wasabi-600">BN-LAUNCH-2026</span> يضيف 50 طاقة لرصيدك.
+          كود التفعيل للحساب — الكوبون لزيادة طاقة الرصيد.
         </p>
+
+        {/* mode switch: activation code vs credit voucher */}
+        <div className="mt-4 flex rounded-full border-2 border-ink-700/20 bg-kraft-100 p-1">
+          <button
+            type="button"
+            onClick={() => setMode("activation")}
+            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+              mode === "activation" ? "bg-ink-700 text-kraft-50" : "text-ink-500 hover:text-ink-700"
+            }`}
+          >
+            كود تفعيل (معهد)
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("voucher")}
+            className={`flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+              mode === "voucher" ? "bg-ink-700 text-kraft-50" : "text-ink-500 hover:text-ink-700"
+            }`}
+          >
+            كوبون رصيد
+          </button>
+        </div>
 
         <form onSubmit={submit} className="mt-4 grid gap-3">
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="BN-LAUNCH-2026"
+            placeholder={mode === "activation" ? "ACT-XXXXXXXXXX" : "BN-LAUNCH-2026"}
             className="sketch-input w-full rounded-md bg-kraft-50 px-3 py-3 font-mono text-lg uppercase tracking-widest text-ink-900 outline-none focus:shadow-[0_0_0_3px_var(--color-highlighter)]"
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
-            aria-label="كود الكوبون"
+            aria-label="كود التفعيل أو الكوبون"
           />
           <button type="submit" disabled={busy || !code.trim()} className="btn-doodle disabled:cursor-not-allowed disabled:opacity-50">
-            {busy ? "جارٍ الشحن…" : "فكّ الكوبون ✂"}
+            {busy ? "جارٍ الإرسال…" : mode === "activation" ? "فعّل حسابك 🗝" : "فكّ الكوبون ✂"}
           </button>
         </form>
 

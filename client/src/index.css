@@ -884,7 +884,7 @@
 .jw-overlay {
   position: fixed;
   inset: 0;
-  z-index: 70; /* فوق المحتوى (z-40/z-50) — لكن الجسم pointer-events: none */
+  z-index: 70; /* فوق كل شي — جويسم يبقى كامل ظاهر، القصاصات فوق الخريطة */
   pointer-events: none; /* ما يمنع أي تفاعل — القاعدة الذهبية ٢ */
   overflow: hidden;
 }
@@ -904,6 +904,7 @@
 .jw-corner.corner-rb { right: 6%; bottom: 3%; }
 .jw-corner.corner-lt { left: 6%; top: 18%; }
 .jw-corner.corner-rt { right: 6%; top: 18%; }
+
 
 /* قلب أفقي — يطلع من هامش اليمين أو اليسار */
 .jw-flip {

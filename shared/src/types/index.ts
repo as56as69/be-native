@@ -17,6 +17,11 @@ export interface DbStatusResponse {
 
 export type UserTier = "free" | "standard" | "professional";
 
+export const TRIAL_DAYS = 3;
+export const ACTIVATION_DAYS = 60;
+export const COLLECTION_HOURS = 24;
+export const TRIAL_STARTER_ENERGY = 15;
+
 export type SpotCategory =
   | "cafe"
   | "restaurant"
@@ -39,10 +44,211 @@ export type User = {
   /** Phone OR auth id — at least one must be present. */
   phone: string | null;
   auth_id: string | null;
+  /** Display name (from simple registration). */
+  name: string | null;
   credits_balance: number;
   current_tier: UserTier;
+  /** Simple free-trial window (3 days). */
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  /** Permanent-tier expiry (60 days from activation). */
+  tier_expires_at: string | null;
+  /** Whether the one-shot trial pack has been bought already. */
+  trial_used: boolean;
   created_at: string;
 };
+
+// ── Entitlement (trial + tier enforcement) ──────────────────────────────
+
+/** How the system treats a user right now (computed, never stored). */
+export type EntitlementStatus =
+  | "trial_active" // free tier + 3-day trial still running
+  | "trial_expired" // free tier + trial over → paid features locked
+  | "paid" // standard/pro tier, tier_expires_at in the future
+  | "tier_expired"; // paid tier expired → falls back to free/locked
+
+export interface UserEntitlement {
+  status: EntitlementStatus;
+  /** Effective tier after any automatic fallback (tier_expired → free). */
+  tier: UserTier;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  /** Whole days left in the trial (0 when done). */
+  trial_days_left: number;
+  tier_expires_at: string | null;
+  /** Whole days left in the paid tier (0 when none/expired). */
+  tier_days_left: number;
+  /** Free users on an active trial may play fixed scenarios without spending. */
+  free_fixed_content: boolean;
+  /** Paid features (fast/transit taxi, energy burning) allowed. */
+  paid_features: boolean;
+  /** Trial is over AND no active paid tier → show the reactivation wall. */
+  requires_activation: boolean;
+}
+
+// ── Registration & sessions ────────────────────────────────────────────
+
+/** POST /api/user/register — simple name+phone registration (no OTP). */
+export interface RegisterInput {
+  name: string;
+  phone: string;
+}
+
+export interface RegisterResponse {
+  user: User;
+  created: boolean;
+}
+
+/** POST /api/user/trial-pack/buy — السلاح السري: رزمة تجربة تُباع لمجاني (مرة وحدة). */
+export interface TrialPackBuyInput {
+  user_id: string;
+}
+
+export interface TrialPackBuyResult {
+  ok: boolean;
+  user: User;
+  /** عدد الطاقة المضافة للرصيد. */
+  added_energy: number;
+  balance: number;
+  trial_ends_at: string;
+}
+
+// ── Activation codes & institutes (partner layer) ──────────────────────
+
+/** A partner institute/teacher/influencer that sells activation codes. */
+export type Institute = {
+  id: string;
+  name: string;
+  contact: string | null;
+  share_per_code: number;
+  is_active: boolean;
+  created_at: string;
+};
+
+/** Permanently-tier activation code («أبو الكود») bound to an institute. */
+export type ActivationCode = {
+  id: string;
+  code: string;
+  tier: UserTier;
+  duration_days: number;
+  institute_id: string | null;
+  is_redeemed: boolean;
+  redeemed_by_user_id: string | null;
+  redeemed_at: string | null;
+  /** Whether the institute's share for this code has been received (تحصيل). */
+  is_settled: boolean;
+  settled_at: string | null;
+  created_at: string;
+};
+
+/** GET /api/entitlement/:id — computed account status (trial/paid/expired). */
+export interface EntitlementResponse {
+  user_id: string;
+  status: EntitlementStatus;
+  tier: UserTier;
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  trial_days_left: number;
+  tier_expires_at: string | null;
+  tier_days_left: number;
+  free_fixed_content: boolean;
+  paid_features: boolean;
+  requires_activation: boolean;
+  /**
+   * Phase 5 — true when the user's paid tier was granted by an activation
+   * code whose institute hasn't settled within COLLECTION_HOURS of the
+   * redemption. The account is auto-blocked (treated as free) until the
+   * institute settles.
+   */
+  collection_blocked: boolean;
+  /**
+   * Phase 6 — whether the one-shot trial pack (السلاح السري) has been bought.
+   * Mirrors users.trial_used so the client can hide the buy button once used.
+   */
+  trial_used: boolean;
+}
+
+/** POST /api/admin/activation-codes/batch request body. */
+export interface ActivationBatchInput {
+  count: number;
+  institute_id: string;
+  tier?: UserTier;
+  duration_days?: number;
+}
+
+/** POST /api/activation/redeem — a student redeems their institute code. */
+export interface ActivationRedeemInput {
+  user_id: string;
+  code: string;
+}
+
+export interface ActivationRedeemResult {
+  code: string;
+  tier: UserTier;
+  duration_days: number;
+  expires_at: string;
+}
+
+/** GET /api/admin/activation-codes response row (joined with institute). */
+export type ActivationCodeWithInstitute = ActivationCode & {
+  institute_name: string | null;
+};
+
+// ── Collection ledger (سجل تحصيل المعاهد — phase 5) ────────────────────
+
+/** One redeemed activation code inside the institute ledger, with settlement state. */
+export interface InstituteLedgerCode {
+  id: string;
+  code: string;
+  redeemed_by_user_id: string | null;
+  redeemed_at: string | null;
+  is_settled: boolean;
+  settled_at: string | null;
+  /** Past the COLLECTION_HOURS window and still unsettled → student blocked. */
+  overdue: boolean;
+  /** Whole hours left to settle before the account auto-blocks (0 when overdue/settled). */
+  hours_left: number;
+}
+
+/** Aggregated collection stats for one institute (شريك). */
+export interface InstituteLedgerRow {
+  institute: Institute;
+  /** Total codes generated for this institute. */
+  generated: number;
+  /** Codes actually redeemed by students. */
+  redeemed: number;
+  /** Redeemed AND settled (المستحقات وصلت). */
+  settled: number;
+  /** Redeemed but not settled yet. */
+  unsettled: number;
+  /** Redeemed, unsettled, past the 24h window → student accounts blocked. */
+  overdue: number;
+  /** Total dues = redeemed × share_per_code (د.ع). */
+  dues: number;
+  /** Distinct students currently auto-blocked because of overdue codes. */
+  blocked_students: number;
+  /** The redeemed codes of this institute (for per-code settle). */
+  codes: InstituteLedgerCode[];
+}
+
+/** GET /api/admin/collection/ledger response. */
+export interface CollectionLedgerResponse {
+  institutes: InstituteLedgerRow[];
+  totals: {
+    generated: number;
+    redeemed: number;
+    settled: number;
+    unsettled: number;
+    overdue: number;
+    dues: number;
+  };
+}
+
+/** POST /api/admin/collection/institutes/:id/settle response. */
+export interface CollectionSettleResult {
+  ok: true;
+  settled: number;
+}
 
 export type Spot = {
   id: string;
@@ -293,6 +499,18 @@ export interface Database {
         Update: Partial<User>;
         Relationships: [];
       };
+      institutes: {
+        Row: Institute;
+        Insert: Partial<Institute>;
+        Update: Partial<Institute>;
+        Relationships: [];
+      };
+      activation_codes: {
+        Row: ActivationCode;
+        Insert: Partial<ActivationCode>;
+        Update: Partial<ActivationCode>;
+        Relationships: [];
+      };
       spots: {
         Row: Spot;
         Insert: Partial<Spot>;
@@ -361,6 +579,10 @@ export interface Database {
       adjust_credits: {
         Args: { p_user_id: string; p_delta: number };
         Returns: number;
+      };
+      redeem_activation_code: {
+        Args: { p_user_id: string; p_code: string };
+        Returns: { tier: UserTier; expires_at: string };
       };
     };
     Enums: {
@@ -565,7 +787,7 @@ export type JweysimScrapLocationType = "pin" | "free";
  *  - location_type "pin"  → rendered beside the spot (spot_id)
  *  - location_type "free" → rendered at the exact % coordinates (pos_x/pos_y)
  */
-export interface JweysimScrap {
+export type JweysimScrap = {
   id: string;
   /** Spot UUID when the scrap is pinned to a location (may be null for free). */
   spot_id: string | null;
@@ -600,7 +822,7 @@ export const JWEYSIM_SCRAPS_KEY = "native_slang_jweysim_scraps";
 // ── Jweysim phrases (عبارات جويسم) ─────────────────────────────────
 
 /** A single mascot phrase — the Arabic line + optional English sticker. */
-export interface JweysimPhrase {
+export type JweysimPhrase = {
   id: string;
   /** Which mascot state this phrase belongs to. */
   state: "idle" | "bored" | "sleeping" | "wake" | "loading" | "error" | "victory" | "click" | "walk";

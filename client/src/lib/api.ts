@@ -1,16 +1,25 @@
 import { API_ROUTES } from "@be-native/shared";
 import type {
   AdminUsersResponse,
+  ActivationCode,
+  ActivationCodeWithInstitute,
+  ActivationRedeemResult,
   ApiProvider,
+  CollectionLedgerResponse,
+  CollectionSettleResult,
   ContentHit,
   ContentUpdateInput,
   ContentUpdateResult,
   DbStatusResponse,
+  EntitlementResponse,
+  Institute,
   JweysimScrap,
   JweysimScrapInput,
   JweysimPhrase,
   JweysimPhraseInput,
   OpeningQuote,
+  RegisterInput,
+  RegisterResponse,
   SandboxResponse,
   Scenario,
   ScenarioEvaluateInput,
@@ -23,19 +32,40 @@ import type {
   SpotWithScenario,
   TransitStartInput,
   TransitStartResponse,
+  TrialPackBuyResult,
   Voucher,
   VoucherBatchItem,
 } from "@be-native/shared";
 
 export interface UserProfile {
   id: string;
+  name: string | null;
   credits_balance: number;
   current_tier: "free" | "standard" | "professional";
+  trial_started_at: string | null;
+  trial_ends_at: string | null;
+  tier_expires_at: string | null;
+  trial_used: boolean;
 }
 
 export interface VoucherRedeemResult {
   code: string;
   balance: number;
+}
+
+export interface VibeGenerationResult {
+  baghdadiPhrase: string;
+  literalMeaning: string;
+  culturalVibe: string;
+  genZSlang: string;
+  usageExample: string;
+  auraImpact: string;
+  contextTag: string;
+  category: string;
+  socialDynamics: string;
+  toneIntensity: string;
+  vibeIntent: string;
+  provider: string;
 }
 
 export interface AdminSettings {
@@ -94,6 +124,14 @@ export const api = {
 
   user: (id: string) => request<UserProfile>(`${API_ROUTES.user}/${id}`),
 
+  entitlement: (id: string) => request<EntitlementResponse>(`${API_ROUTES.entitlement}/${id}`),
+
+  register: (input: RegisterInput) =>
+    request<RegisterResponse>(API_ROUTES.register, {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
+
   quotes: () => request<OpeningQuote[]>(API_ROUTES.quotes),
 
   scenario: (spotId: string) =>
@@ -124,6 +162,18 @@ export const api = {
     request<VoucherRedeemResult>(API_ROUTES.vouchers, {
       method: "POST",
       body: JSON.stringify({ user_id, code }),
+    }),
+
+  redeemActivation: (user_id: string, code: string) =>
+    request<ActivationRedeemResult>(API_ROUTES.activation, {
+      method: "POST",
+      body: JSON.stringify({ user_id, code }),
+    }),
+
+  buyTrialPack: (user_id: string) =>
+    request<TrialPackBuyResult>(API_ROUTES.trialPack, {
+      method: "POST",
+      body: JSON.stringify({ user_id }),
     }),
 
   // ── admin ────────────────────────────────────────────────────────
@@ -189,12 +239,32 @@ export const api = {
       }),
   },
 
+  adminActivation: {
+    listInstitutes: () => adminRequest<Institute[]>("/institutes"),
+    createInstitute: (input: Partial<Institute>) =>
+      adminRequest<Institute>("/institutes", { method: "POST", body: JSON.stringify(input) }),
+    listCodes: () => adminRequest<ActivationCodeWithInstitute[]>("/activation-codes"),
+    batch: (count: number, institute_id: string, tier?: string, duration_days?: number) =>
+      adminRequest<ActivationCode[]>("/activation-codes/batch", {
+        method: "POST",
+        body: JSON.stringify({ count, institute_id, tier, duration_days }),
+      }),
+  },
+
   adminUsers: {
     list: () => adminRequest<AdminUsersResponse>("/users"),
     adjustCredits: (id: string, amount: number) =>
       adminRequest<{ user_id: string; delta: number; balance: number }>(`/users/${id}/credits`, {
         method: "POST",
         body: JSON.stringify({ amount }),
+      }),
+  },
+
+  adminCollection: {
+    ledger: () => adminRequest<CollectionLedgerResponse>("/collection/ledger"),
+    settle: (instituteId: string) =>
+      adminRequest<CollectionSettleResult>(`/collection/institutes/${instituteId}/settle`, {
+        method: "POST",
       }),
   },
 
@@ -221,6 +291,12 @@ export const api = {
   scraps: () => request<JweysimScrap[]>(API_ROUTES.scraps),
 
   phrases: () => request<JweysimPhrase[]>(API_ROUTES.phrases),
+
+  generateVibe: (input: { phrase: string; template?: string }) =>
+    request<VibeGenerationResult>(
+      "/api/vibe",
+      { method: "POST", body: JSON.stringify(input) },
+    ),
 
   adminJweysim: {
     list: () => adminRequest<JweysimScrap[]>("/jweysim/scraps"),

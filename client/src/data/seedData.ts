@@ -20,63 +20,7 @@ export interface SeedExportBundle {
 /* ── Traces / أثر ─────────────────────────────────────────────────────── */
 
 /** Initial unlocked traces — discovered-style, matching CollectibleItem. */
-export const DEFAULT_COLLECTIBLES: CollectibleItem[] = [
-  {
-    id: "seed-trace-001",
-    phrase: "انطي الخبز لخبازه",
-    targetSlang: "Let him cook",
-    contextNote: "الثقة بمهارة أهل الاختصاص وعدم التطفل على شغلهم",
-    category: "MANILA_FOLDER",
-    source: "SCENARIO",
-    isUnlocked: true,
-    unlockedAt: "2025-01-01T10:00:00.000Z",
-    createdAt: "2025-01-01T10:00:00.000Z",
-  },
-  {
-    id: "seed-trace-002",
-    phrase: "يده ثقيلة",
-    targetSlang: "Main character energy",
-    contextNote: "من تمسكه برّا يزدهر؛ حضوره وحضه يملآن المكان",
-    category: "GLOBAL",
-    source: "SCENARIO",
-    isUnlocked: true,
-    unlockedAt: "2025-01-01T10:01:00.000Z",
-    createdAt: "2025-01-01T10:01:00.000Z",
-  },
-  {
-    id: "seed-trace-003",
-    phrase: "طابكة عنده",
-    targetSlang: "He's trippin'",
-    contextNote: "تُقال لمن يتصرف بغرابة أو يخرج عن النص ذهنيًا",
-    category: "STREET_POSTER",
-    source: "SCENARIO",
-    isUnlocked: true,
-    unlockedAt: "2025-01-01T10:02:00.000Z",
-    createdAt: "2025-01-01T10:02:00.000Z",
-  },
-  {
-    id: "seed-trace-004",
-    phrase: "ريحت بالي",
-    targetSlang: "You're a lifesaver",
-    contextNote: "شكر لا يُنسى لمن أزال الهم عنك",
-    category: "CHALKBOARD",
-    source: "SCENARIO",
-    isUnlocked: true,
-    unlockedAt: "2025-01-01T10:03:00.000Z",
-    createdAt: "2025-01-01T10:03:00.000Z",
-  },
-  {
-    id: "seed-trace-005",
-    phrase: "هاي زين",
-    targetSlang: "That's clean",
-    contextNote: "إطراء سريع على شيء متناسق وجميل",
-    category: "RECEIPT_MENU",
-    source: "SCENARIO",
-    isUnlocked: true,
-    unlockedAt: "2025-01-01T10:04:00.000Z",
-    createdAt: "2025-01-01T10:04:00.000Z",
-  },
-];
+export const DEFAULT_COLLECTIBLES: CollectibleItem[] = [];
 
 /* ── Vibe dictionary / القاموس الحسي ─────────────────────────────────── */
 

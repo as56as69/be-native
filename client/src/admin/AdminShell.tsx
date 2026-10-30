@@ -9,6 +9,8 @@ import { VoucherGenerator } from "./VoucherGenerator";
 import { UserTracker } from "./UserTracker";
 import { SystemSettings } from "./SystemSettings";
 import { OpeningQuotes } from "./OpeningQuotes";
+import { ActivationManager } from "./ActivationManager";
+import { CollectionLedger } from "./CollectionLedger";
 import { ADMIN_THEMES, loadAdminTheme, saveAdminTheme } from "./adminThemes";
 import type { AdminThemeId } from "./adminThemes";
 
@@ -35,6 +37,18 @@ const TAB_ICONS: Record<string, ReactNode> = {
     <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2.5" y="4.5" width="15" height="11" rx="1.5" />
       <path d="M7 4.5V2.5M13 4.5V2.5M2.5 9h15" />
+    </svg>
+  ),
+  activation: (
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3.5" width="14" height="13" rx="1.5" />
+      <path d="M7 8.5h6M7 11.5h4" />
+      <path d="M10 13.5 8.8 15l-1.6-1.6M10 6.5 8.8 8l-1.6-1.6" />
+    </svg>
+  ),
+  collection: (
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 10l2.5 2.5L10 9M3.5 6l2.5 2.5L10 5M11 5h5M16 5v10H4M15 12H9" />
     </svg>
   ),
   users: (
@@ -73,6 +87,8 @@ const TABS = [
   { id: "spots", label: "استوديو النقاط" },
   { id: "jweysim", label: "جويسم" },
   { id: "vouchers", label: "الكوبونات" },
+  { id: "activation", label: "الشركاء والتفعيل" },
+  { id: "collection", label: "سجل التحصيل" },
   { id: "users", label: "المستخدمون" },
   { id: "quotes", label: "عبارات البداية" },
   { id: "settings", label: "إعدادات النظام" },
@@ -164,6 +180,8 @@ function TabBody({ tab }: { tab: AdminTabId }) {
     spots: <SpotStudio />,
     jweysim: <JweysimAdmin />,
     vouchers: <VoucherGenerator />,
+    activation: <ActivationManager />,
+    collection: <CollectionLedger />,
     users: <UserTracker />,
     quotes: <OpeningQuotes />,
     settings: <SystemSettings />,

@@ -44,10 +44,15 @@ const VOUCHER_ID = "00000000-0000-4000-8000-0000000000f1";
 const seededUsers: Row[] = [
   {
     id: DEMO_USER_ID,
-    phone: "+964000000001",
+    phone: "+964****0001",
     auth_id: null,
+    name: "ضيف تجريبي",
     credits_balance: 50,
     current_tier: "standard",
+    trial_started_at: null,
+    trial_ends_at: null,
+    tier_expires_at: null,
+    trial_used: false,
     created_at: new Date().toISOString(),
   },
 ];
@@ -657,6 +662,8 @@ interface LocalState {
   users: Row[];
   spots: Row[];
   vouchers: Row[];
+  institutes: Row[];
+  activation_codes: Row[];
   api_providers: Row[];
   scenarios: Row[];
   scenario_graphs: Row[];
@@ -670,6 +677,8 @@ const TABLE_KEYS: Array<keyof LocalState> = [
   "users",
   "spots",
   "vouchers",
+  "institutes",
+  "activation_codes",
   "api_providers",
   "scenarios",
   "scenario_graphs",
@@ -685,12 +694,15 @@ const TABLE_KEYS: Array<keyof LocalState> = [
  */
 const TABLE_DEFAULTS: Partial<Record<keyof LocalState, Row>> = {
   scenario_graphs: { is_active: true },
+  users: { trial_used: false },
 };
 
 interface PersistedState {
   users: Row[] | undefined;
   spots: Row[] | undefined;
   vouchers: Row[] | undefined;
+  institutes: Row[] | undefined;
+  activation_codes: Row[] | undefined;
   api_providers: Row[] | undefined;
   scenarios: Row[] | undefined;
   scenario_graphs: Row[] | undefined;
@@ -705,6 +717,8 @@ function freshSeed(): LocalState {
     users: [...seededUsers],
     spots: [...seededSpots],
     vouchers: [...seededVouchers],
+    institutes: [],
+    activation_codes: [],
     api_providers: [...seededProviders],
     scenarios: [...seededScenarios],
     scenario_graphs: seededScenarioGraphs as unknown as Row[],
@@ -1035,6 +1049,38 @@ function runRpc(name: string, params: Record<string, unknown>): DbResponse {
       user.credits_balance =
         (Number(user.credits_balance) || 0) + (Number(voucher.credit_amount) || 0);
       return { data: user.credits_balance, error: null };
+    }
+    case "redeem_activation_code": {
+      if (!user) return errorOut("redeem_activation_code: USER_NOT_FOUND");
+      const code = String(params.p_code ?? "").trim();
+      const ac = state.activation_codes.find(
+        (c) => String(c.code) === code && c.is_redeemed !== true
+      ) ?? null;
+      if (ac) {
+        ac.is_redeemed = true;
+        ac.redeemed_by_user_id = user.id;
+        ac.redeemed_at = new Date().toISOString();
+      } else {
+        return errorOut("redeem_activation_code: ACTIVATION_INVALID");
+      }
+
+      const days = Math.max(1, Number(ac.duration_days) || 60);
+      const tier = String(ac.tier) === "professional" ? "professional" : "standard";
+      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+      user.current_tier = tier;
+      user.tier_expires_at = expiresAt.toISOString();
+
+      // Phase 5 — every redeemed activation code starts UNSETTLED: the
+      // institute has 24h (COLLECTION_HOURS) to transfer the dues, otherwise
+      // the student's account auto-blocks until the admin marks it settled.
+      ac.is_settled = false;
+      ac.settled_at = null;
+
+      return {
+        data: { tier, expires_at: expiresAt.toISOString() },
+        error: null,
+      };
     }
     default:
       return errorOut(`rpc ${name} is not implemented by the local dev database`);

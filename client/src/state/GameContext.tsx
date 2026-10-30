@@ -2,6 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 
 import type {
+  ActivationRedeemResult,
+  EntitlementResponse,
+  EntitlementStatus,
   ScenarioPayload,
   ScenarioPayloadSource,
   Spot,
@@ -9,9 +12,17 @@ import type {
   TransitMode,
   TransitStartResponse,
   TransitUnlockedResponse,
+  TrialPackBuyResult,
 } from "@be-native/shared";
 
 import { ApiError, api, type UserProfile } from "../lib/api";
+
+export interface UserProfileWithEntitlement extends UserProfile {
+  status?: EntitlementStatus;
+  requires_activation?: boolean;
+  trial_days_left?: number;
+  tier_days_left?: number;
+}
 
 // Demo guest — seeded by server/db/seed.ts (50 credits, standard tier).
 export const GUEST_USER_ID = "00000000-0000-4000-8000-0000000000b1";
@@ -29,23 +40,30 @@ export interface TransitResult {
 interface GameState {
   screen: Screen;
   user: UserProfile | null;
+  entitlement: EntitlementResponse | null;
   spots: Spot[];
   activeSpot: Spot | null;
   transit: TransitResult | null;
   voucherOpen: boolean;
   apiConnected: boolean;
+  authChecked: boolean;
 
   boot: () => Promise<void>;
+  register: (input: { name: string; phone: string }) => Promise<UserProfile>;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+  refreshEntitlement: () => Promise<void>;
   tapStory: () => void;
   openSpot: (spot: Spot) => void;
   closeSpot: () => void;
   startTransit: (mode: TransitMode) => Promise<TransitStartResponse>;
   enterScene: (response: TransitStartResponse, mode: TransitMode, spotId: string) => void;
   exitScene: () => void;
-  refreshUser: () => Promise<void>;
   openVoucher: () => void;
   closeVoucher: () => void;
   redeemVoucher: (code: string) => Promise<number | null>;
+  redeemActivation: (code: string) => Promise<ActivationRedeemResult>;
+  buyTrialPack: () => Promise<TrialPackBuyResult>;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -53,17 +71,29 @@ const GameContext = createContext<GameState | null>(null);
 export function GameProvider({ children }: { children: ReactNode }) {
   const [screen, setScreen] = useState<Screen>("story");
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [entitlement, setEntitlement] = useState<EntitlementResponse | null>(null);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [activeSpot, setActiveSpot] = useState<Spot | null>(null);
   const [transit, setTransit] = useState<TransitResult | null>(null);
   const [voucherOpen, setVoucherOpen] = useState(false);
   const [apiConnected, setApiConnected] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const refreshUser = useCallback(async () => {
     try {
-      setUser(await api.user(GUEST_USER_ID));
+      const stored = localStorage.getItem("benative.user.id");
+      if (stored) setUser(await api.user(stored));
     } catch {
       // keep last known profile; map still usable offline
+    }
+  }, []);
+
+  const refreshEntitlement = useCallback(async () => {
+    try {
+      const stored = localStorage.getItem("benative.user.id");
+      if (stored) setEntitlement(await api.entitlement(stored));
+    } catch {
+      // entitlement unavailable — the client keeps whatever it saw last
     }
   }, []);
 
@@ -74,9 +104,21 @@ export function GameProvider({ children }: { children: ReactNode }) {
     } catch {
       setApiConnected(false);
     }
-    const [loadedSpots, profile] = await Promise.all([api.spots(), api.user(GUEST_USER_ID)]);
+    const stored = localStorage.getItem("benative.user.id");
+    const [loadedSpots, profile] = await Promise.all([
+      api.spots(),
+      stored ? api.user(stored) : Promise.resolve(null),
+    ]);
     setSpots(loadedSpots);
-    setUser(profile);
+    if (profile) setUser(profile);
+    if (stored) {
+      try {
+        setEntitlement(await api.entitlement(stored));
+      } catch {
+        // non-blocking
+      }
+    }
+    setAuthChecked(true);
   }, []);
 
   useEffect(() => {
@@ -84,6 +126,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [boot]);
 
   const tapStory = useCallback(() => setScreen("map"), []);
+
+  const register = useCallback(async (input: { name: string; phone: string }) => {
+    const { user: created } = await api.register(input);
+    localStorage.setItem("benative.user.id", created.id);
+    setUser(created);
+    try {
+      setEntitlement(await api.entitlement(created.id));
+    } catch {
+      // non-blocking
+    }
+    return created;
+  }, []);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem("benative.user.id");
+    setUser(null);
+    setEntitlement(null);
+    setScreen("story");
+  }, []);
 
   /** Clicking a map marker opens the ScenarioViewer DIRECTLY — no gate hop.
    *  The viewer only needs `transit.spotId` to fetch the graph, so we plant a
@@ -106,10 +167,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     async (mode: TransitMode): Promise<TransitStartResponse> => {
       const from = spots.find((s) => !s.is_locked) ?? spots[0];
       const to = activeSpot ?? from;
+      const stored = localStorage.getItem("benative.user.id") ?? GUEST_USER_ID;
       const response = await api.transitStart({
-        user_id: GUEST_USER_ID,
-        from_spot_id: from?.id ?? GUEST_USER_ID,
-        to_spot_id: to.id ?? GUEST_USER_ID,
+        user_id: stored,
+        from_spot_id: from?.id ?? stored,
+        to_spot_id: to.id ?? stored,
         mode,
       });
       if (response.status === "unlocked") {
@@ -149,53 +211,90 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const redeemVoucher = useCallback(
     async (code: string): Promise<number | null> => {
-      const result = await api.redeemVoucher(GUEST_USER_ID, code);
+      const stored = localStorage.getItem("benative.user.id");
+      if (!stored) throw new ApiError(401, "سجّل دخولك أولاً", "NO_SESSION");
+      const result = await api.redeemVoucher(stored, code);
       await refreshUser();
       return result.balance;
     },
     [refreshUser]
   );
 
+  const redeemActivation = useCallback(
+    async (code: string): Promise<ActivationRedeemResult> => {
+      const stored = localStorage.getItem("benative.user.id");
+      if (!stored) throw new ApiError(401, "سجّل دخولك أولاً", "NO_SESSION");
+      const result = await api.redeemActivation(stored, code);
+      await refreshUser();
+      await refreshEntitlement();
+      return result;
+    },
+    [refreshUser, refreshEntitlement]
+  );
+
+  const buyTrialPack = useCallback(async (): Promise<TrialPackBuyResult> => {
+    const stored = localStorage.getItem("benative.user.id");
+    if (!stored) throw new ApiError(401, "سجّل دخولك أولاً", "NO_SESSION");
+    const result = await api.buyTrialPack(stored);
+    await refreshUser();
+    await refreshEntitlement();
+    return result;
+  }, [refreshUser, refreshEntitlement]);
+
   const value = useMemo<GameState>(
     () => ({
       screen,
       user,
+      entitlement,
       spots,
       activeSpot,
       transit,
       voucherOpen,
       apiConnected,
+      authChecked,
       boot,
       tapStory,
+      register,
+      logout,
+      refreshUser,
+      refreshEntitlement,
       openSpot,
       closeSpot,
       startTransit,
       enterScene,
       exitScene,
-      refreshUser,
       openVoucher,
       closeVoucher,
       redeemVoucher,
+      redeemActivation,
+      buyTrialPack,
     }),
     [
       screen,
       user,
+      entitlement,
       spots,
       activeSpot,
       transit,
       voucherOpen,
       apiConnected,
+      authChecked,
       boot,
       tapStory,
+      register,
+      logout,
+      refreshUser,
+      refreshEntitlement,
       openSpot,
       closeSpot,
       startTransit,
       enterScene,
       exitScene,
-      refreshUser,
       openVoucher,
       closeVoucher,
       redeemVoucher,
+      redeemActivation,
+      buyTrialPack,
     ]
   );
 

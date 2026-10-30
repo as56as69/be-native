@@ -31,4 +31,13 @@ npm-debug.log*
 .idea/
 
 # Compiled native addons
-*.node
+*.node# ---
+server/.local-db.json.bak
+client/src/components/*.bak_v1
+server/tests/test-abacus.ts
+
+# خصوصيات أحمد وتخطيطه (لا تُرفع إلى كيت هاب)
+غرفة-التخطيط-الملف-الاستراتيجي.md
+غرفة-السوق-الملف-الاقتصادي.md
+.hermes/
+REGISTRY-BE-NATIVE.md

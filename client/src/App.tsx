@@ -14,11 +14,13 @@ import { ScenarioViewer } from "./components/ScenarioViewer";
 import { TraceDrawer } from "./components/TraceDrawer";
 import { VibeMapperEngine } from "./components/VibeMapperEngine";
 import { VoucherModal } from "./components/VoucherModal";
+import { ActivationWall } from "./components/ActivationWall";
 import GSlangSheet from "./components/GSlangSheet";
 import JweysimOverlay from "./components/JweysimOverlay";
 import { UI_GENZ_COPY } from "./data/seedData";
 import { useCollectibles } from "./hooks/useCollectibles";
 import { useVibeMapper } from "./hooks/useVibeMapper";
+import { RegisterScreen } from "./components/RegisterScreen";
 
 function MapScreen() {
   const { user, spots, openSpot, openVoucher, apiConnected, activeSpot, voucherOpen } = useGame();
@@ -177,7 +179,7 @@ function MapScreen() {
           عندما لا تكون أي نافذة مفتوحة: التكسي/النقطة (activeSpot)،
           الشحن (voucherOpen)، الفايب (isVibeMapperOpen)، أو الدفتر
           (tracesOpen) — حتى لا تبقى القصاصات فوق أي نافذة منبثقة. */}
-      {!activeSpot && !tracesOpen && !isVibeMapperOpen && !voucherOpen && (
+      {!activeSpot && !tracesOpen && !isVibeMapperOpen && !voucherOpen && !isGSlangOpen && (
         <JweysimOverlay visible size={104} />
       )}
 
@@ -204,7 +206,7 @@ function MapScreen() {
                     </span>
                   </h2>
                   <p className="font-arabic mt-0.5 text-xs text-amber-900/70">
-                    من البغدادي لسلانغ جيل Z — ولّد واحفظ في أثر مباشرة.
+                    الثقافة البغدادية بروحيه أمريكية 🇮🇶🇺🇸
                   </p>
                 </div>
                 <button
@@ -268,7 +270,7 @@ function MapScreen() {
 }
 
 function Shell() {
-  const { screen, activeSpot, voucherOpen, tapStory, closeSpot, apiConnected } = useGame();
+  const { screen, activeSpot, voucherOpen, tapStory, closeSpot, openVoucher, apiConnected, authChecked, user, entitlement } = useGame();
   const { current, previous, exiting } = useCrossfade(screen);
 
   const renderScreen = (s: typeof screen) => {
@@ -276,6 +278,14 @@ function Shell() {
     if (s === "scene") return <ScenarioViewer />;
     return <MapScreen />;
   };
+
+  // gate: wait until we know if there is a saved session; if none → register first
+  if (!authChecked) {
+    return <div className="notebook-paper flex min-h-dvh items-center justify-center text-ink-700/60">…</div>;
+  }
+  if (!user) {
+    return <RegisterScreen />;
+  }
 
   return (
     <>
@@ -294,6 +304,10 @@ function Shell() {
       {/* overlays sit on top of the crossfade stage */}
       {current === "map" && activeSpot && <TransitModal spot={activeSpot} onClose={closeSpot} />}
       {current === "map" && voucherOpen && <VoucherModal />}
+      {/* التجربة المجانية المحكومة — أول خروج من الأستوري نعرض جدار التفعيل إذا لزم */}
+      {current !== "story" && entitlement?.requires_activation && !activeSpot && !voucherOpen && (
+        <ActivationWall onRecharge={() => openVoucher()} onClose={() => { /* البوابة تظل مغلقة — المستخدم يقرر » */ }} />
+      )}
     </>
   );
 }

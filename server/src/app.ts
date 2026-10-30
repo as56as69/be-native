@@ -15,6 +15,12 @@ import { createVouchersRouter } from "./routes/vouchers.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createScenariosRouter } from "./routes/scenarios.js";
 import { createGSlangRouter } from "./routes/gslang.js";
+import { createVibeRouter } from "./routes/vibe.js";
+import { createUserRouter } from "./routes/user.js";
+import { createActivationRouter } from "./routes/activation.js";
+import { createEntitlementRouter } from "./routes/entitlement.js";
+import { createTrialPackRouter } from "./routes/trialpack.js";
+import { createCollectionRouter } from "./routes/collection.js";
 
 export interface AppDeps extends TransitDeps {}
 
@@ -101,7 +107,7 @@ export function createApp(deps: AppDeps = {}): Express {
       const session = getDb();
       const { data, error } = await session
         .from("users")
-        .select("id, credits_balance, current_tier")
+        .select("id, name, credits_balance, current_tier, trial_started_at, trial_ends_at, tier_expires_at, trial_used")
         .eq("id", req.params.id)
         .maybeSingle();
       if (error) throw new Error(`user query failed: ${error.message}`);
@@ -135,9 +141,15 @@ export function createApp(deps: AppDeps = {}): Express {
   app.use("/api/transit", createTransitRouter({ transitGate: deps.transitGate }));
   app.use("/api/scenarios", createScenariosRouter());
   app.use("/api/vouchers", createVouchersRouter());
+  app.use("/api/user", createUserRouter());
+  // Phase 6 — السلاح السري: رزمة تجربة تُباع لمجاني مرة وحدة.
+  app.use("/api/user/trial-pack", createTrialPackRouter());
+  app.use("/api/activation", createActivationRouter());
+  app.use("/api/entitlement", createEntitlementRouter());
+  app.use("/api/admin/collection", createCollectionRouter());
   app.use("/api/admin", createAdminRouter());
   app.use("/api/gslang", createGSlangRouter());
-
+  app.use("/api/vibe", createVibeRouter());
   // Public read-only scraps feed for the Doodle Map overlay (قصاصات جويسم).
   app.get(API_ROUTES.scraps, async (_req, res, next) => {
     try {

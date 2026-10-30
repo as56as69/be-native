@@ -11,8 +11,45 @@ const TIER_LABEL: Record<string, string> = {
   professional: "محتري",
 };
 
+/** Status chip tone for the entitlement snapshot. */
+function entitlementTone(e: { status: string; requires_activation: boolean }): "ok" | "warn" | "bad" {
+  if (e.requires_activation) return "bad";
+  if (e.status === "paid") return "ok";
+  return "warn";
+}
+
+function entitlementLabel(e: { status: string; trial_days_left: number; tier_days_left: number }): string {
+  if (e.status === "paid") return `مدفوع — باقي ${e.tier_days_left} يوم`;
+  if (e.status === "trial_active") return `تجربة — باقي ${e.trial_days_left} يوم`;
+  if (e.status === "tier_expired") return "انتهت المدة";
+  if (e.status === "trial_expired") return "انتهت التجربة";
+  return "غير معروف";
+}
+
+/** «ينتهي في» — تاريخ قصير قبل الانتهاء + تنبيه متبقي (نفس ترتيب الصف). */
+function expiryCell(u: AdminUserRow): string {
+  if (u.entitlement?.status === "paid" && u.tier_expires_at) {
+    return new Date(u.tier_expires_at).toLocaleDateString("ar-EG");
+  }
+  if (u.entitlement?.status === "trial_active" && u.trial_ends_at) {
+    return new Date(u.trial_ends_at).toLocaleDateString("ar-EG");
+  }
+  return "—";
+}
+
+export interface AdminUserRow extends User {
+  entitlement?: {
+    status: string;
+    tier: string;
+    trial_days_left: number;
+    tier_days_left: number;
+    requires_activation: boolean;
+    paid_features: boolean;
+  };
+}
+
 export function UserTracker() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [openSpots, setOpenSpots] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -70,14 +107,15 @@ export function UserTracker() {
             <tr className="border-b border-slatew-700 font-display text-base text-slatew-300">
               <th className="py-1.5 pe-3 text-start">المستخدِم</th>
               <th className="py-1.5 pe-3 text-start">الرتبة</th>
+              <th className="py-1.5 pe-3 text-start">الحالة</th>
+              <th className="py-1.5 pe-3 text-start">ينتهي في</th>
               <th className="py-1.5 pe-3 text-start">الرصيد</th>
-              <th className="py-1.5 pe-3 text-start">تاريخ الإنشاء</th>
               <th className="py-1.5 text-start">ضبط الرصيد</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
-              <tr><td colSpan={5}><Empty label="ماكو مستخدمين" /></td></tr>
+              <tr><td colSpan={6}><Empty label="ماكو مستخدمين" /></td></tr>
             )}
             {users.map((u) => (
               <tr key={u.id} className="border-b border-slatew-800/70">
@@ -86,9 +124,15 @@ export function UserTracker() {
                 </td>
                 <td className="py-2 pe-3"><Badge tone="ok">{TIER_LABEL[u.current_tier] ?? u.current_tier}</Badge></td>
                 <td className="py-2 pe-3">
+                  {u.entitlement && (
+                    <Badge tone={entitlementTone(u.entitlement)}>{entitlementLabel(u.entitlement)}</Badge>
+                  )}
+                  {!u.entitlement && <span className="text-slatew-500">—</span>}
+                </td>
+                <td className="py-2 pe-3 text-xs text-slatew-400">{expiryCell(u)}</td>
+                <td className="py-2 pe-3">
                   <b className={u.credits_balance === 0 ? "text-red-300" : "text-kraft-200"}>{u.credits_balance}</b>
                 </td>
-                <td className="py-2 pe-3 text-xs text-slatew-400">{new Date(u.created_at).toLocaleDateString("ar-EG")}</td>
                 <td className="py-2">
                   {adjusting?.id === u.id ? (
                     <div className="flex items-center gap-1.5">
